@@ -80,14 +80,12 @@ proc japan(uv: Vec2): RGB =
 #     b
 #
 #   bltr
-#   0000
-#   0001
-#   0010
+#   0000 = 00
+#   0001 = 01
+#   0010 = 02
+#   ...
+#   1111 = 15
 #
-# x = 0101010110
-# x >> 1 = 010101011
-# x & 1  = 0
-
 proc wang(bltr: uint8, uv: Vec2): RGB =
   let r = 0.50
   let colors = [
