@@ -26,6 +26,8 @@ Here are some tiles we generated so far:
 
 ![1100](./tiles/tile-12.png) ![1101](./tiles/tile-13.png) ![1110](./tiles/tile-14.png) ![1111](./tiles/tile-15.png)
 
+**We are yet to implement the actual grid generation...**
+
 ## Quick Start
 
 Install [Nim](https://nim-lang.org/) compiler first.
