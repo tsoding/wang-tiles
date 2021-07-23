@@ -1,6 +1,4 @@
-# Gradients with Wang Tiles in [Nim](https://nim-lang.org/)
-
-Wang Tiles Grid generator in Nim
+# Wang Tiles Grid generator in [Nim](https://nim-lang.org/)
 
 ## Goal
 
