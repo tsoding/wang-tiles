@@ -18,8 +18,8 @@ const
   A = 3
 
 const
-  WIDTH = 256
-  HEIGHT = 256
+  WIDTH = 128
+  HEIGHT = 128
 
 type Vec[N: static[int]] = array[0..N-1, float]
 
@@ -105,6 +105,7 @@ proc wang(bltr: uint8, uv: Vec2): RGB =
     result = min(result + vec[3](t) * c, vec[3](1.0))
     mask = mask shr 1
 
+# TODO: try to link with stb_image.h and save directly in png
 proc save_wang_tile(bltr: uint8, filePath: string) =
   let f = open(filePath, fmWrite)
   defer: f.close()
