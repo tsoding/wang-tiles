@@ -70,6 +70,9 @@ proc japan(uv: Vec2): RGB =
   let a = (vec[2](0.5) - uv).length > 0.25
   [1.0, float(a), float(a)]
 
+# TODO: more wang tile ideas:
+# - Metaballs: https://en.wikipedia.org/wiki/Metaballs
+
 #     t
 #   +---+
 # l |   | r
