@@ -18,8 +18,8 @@ const
   A = 3
 
 const
-  WIDTH = 64
-  HEIGHT = 64
+  WIDTH = 256
+  HEIGHT = 256
 
 type Vec[N: static[int]] = array[0..N-1, float]
 
