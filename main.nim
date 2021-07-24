@@ -21,6 +21,8 @@ const
   WIDTH = 128
   HEIGHT = 128
 
+proc lerp(x, y, a: float): float = x + (y - x) * a
+
 type Vec[N: static[int]] = array[0..N-1, float]
 
 proc vec[N: static[int]](s: float): Vec[N] =
@@ -57,6 +59,9 @@ proc length[N: static[int]](a: Vec[N]): float =
     result += a[i] * a[i]
   result = sqrt(result)
 
+proc lerp[N: static[int]](x, y, a: Vec[N]): Vec[N] =
+  x + (y - x) * a
+
 type RGB = Vec[3]
 type Vec2 = Vec[2]
 
@@ -86,11 +91,13 @@ proc japan(uv: Vec2): RGB =
 #   ...
 #   1111 = 15
 #
+# TODO: gamma correction while doing operations on colors
+# https://learnopengl.com/Advanced-Lighting/Gamma-Correction
 proc wang(bltr: uint8, uv: Vec2): RGB =
   let r = 0.50
   let colors = [
     [1.0, 1.0, 0.0], # 0
-    [1.0, 0.0, 1.0], # 1
+    [0.0, 0.0, 1.0], # 1
   ]
   let sides = [
     [1.0, 0.5], # r
@@ -102,7 +109,7 @@ proc wang(bltr: uint8, uv: Vec2): RGB =
   for p in sides:
     let t = 1.0 - min((p - uv).length / r, 1.0)
     let c = colors[mask and 1]
-    result = min(result + vec[3](t) * c, vec[3](1.0))
+    result = lerp(result, c, vec[3](t))
     mask = mask shr 1
 
 # TODO: try to link with stb_image.h and save directly in png
