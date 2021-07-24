@@ -18,13 +18,7 @@ Think of it as a [Fragment Shader](https://www.khronos.org/opengl/wiki/Fragment_
 
 Here are some tiles we generated so far:
 
-![0000](./tiles/tile-00.png) ![0001](./tiles/tile-01.png) ![0010](./tiles/tile-02.png) ![0011](./tiles/tile-03.png)
-
-![0100](./tiles/tile-04.png) ![0101](./tiles/tile-05.png) ![0110](./tiles/tile-06.png) ![0111](./tiles/tile-07.png)
-
-![1000](./tiles/tile-08.png) ![1001](./tiles/tile-09.png) ![1010](./tiles/tile-10.png) ![1011](./tiles/tile-11.png)
-
-![1100](./tiles/tile-12.png) ![1101](./tiles/tile-13.png) ![1110](./tiles/tile-14.png) ![1111](./tiles/tile-15.png)
+![tile-set](tile-set.png)
 
 **We are yet to implement the actual grid generation...**
 

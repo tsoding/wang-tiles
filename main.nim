@@ -1,13 +1,14 @@
 import system
 import strformat
 import math
-import sequtils
 
 import la
 
 const
-  WIDTH = 512
-  HEIGHT = 512
+  TILE_WIDTH: uint = 128
+  TILE_HEIGHT: uint = 128
+  TILESET_WIDTH: uint = TILE_WIDTH * 4
+  TILESET_HEIGHT: uint = TILE_HEIGHT * 4
 
 proc stripes(uv: Vec2): RGB =
   let n = 20.0
@@ -64,27 +65,53 @@ proc wang(bltr: uint8, uv: Vec2): RGB =
     mask = mask shr 1
   result = pow(result, vec[3](1.0 / 2.2))
 
+type RGBA32 = uint32
+type Tile32 = array[TILE_HEIGHT, array[TILE_WIDTH, RGBA32]]
+type TileSet32 = array[TILESET_HEIGHT, array[TILESET_WIDTH, RGBA32]]
+
+proc makeRGBA32(r, g, b: float): RGBA32 =
+  (uint32(b * 255.0) shl 16) or
+  (uint32(g * 255.0) shl 8) or
+  uint32(r * 255.0) or
+  uint32(0xFF000000)
+
+proc putTileIntoTileSet(bltr: uint8, tileSet: var TileSet32) =
+  let x0 = (bltr mod 4) * TILE_WIDTH
+  let y0 = (bltr div 4) * TILE_HEIGHT
+  for dy in 0..<TILE_HEIGHT:
+    for dx in 0..<TILE_WIDTH:
+      let u = float(dx) / float(TILE_WIDTH)
+      let v = float(dy) / float(TILE_HEIGHT)
+      let pixel = wang(bltr, [u, v])
+      let x = x0 + dx
+      let y = y0 + dy
+      tileSet[y][x] = makeRGBA32(pixel[R], pixel[G], pixel[B])
+
+proc generateTileSet(tileSet: var TileSet32) =
+  for bltr in 0..<16:
+    echo "Generating tile ", bltr
+    putTileIntoTileSet(uint8(bltr), tileSet)
+
 # TODO: try to link with stb_image.h and save directly in png
-proc save_wang_tile(bltr: uint8, filePath: string) =
+proc saveTileSet32AsPPM(tileSet: TileSet32, filePath: string) =
   let f = open(filePath, fmWrite)
   defer: f.close()
-  f.write_Line("P6")
-  f.wrITELine(fmt"{WIDTH} {HEIGHT} 255")
-  for y in 0..<HEIGHT:
-    for x in 0..<WIDTH:
-      let u = float(x) / float(WIDTH)
-      let v = float(y) / float(HEIGHT)
-      let pixel = wang(bltr, [u, v])
-      f.w_R_i_T_e(chr(int(pixel[R] * 255.0)))
-      f.w_r_I_t_E(chr(int(pixel[G] * 255.0)))
-      f.w_R_i_T_e(chr(int(pixel[B] * 255.0)))
+  f.writeLine("P6")
+  f.writeLine(fmt"{TILESET_WIDTH} {TILESET_HEIGHT} 255")
+  for y in 0..<TILESET_HEIGHT:
+    for x in 0..<TILESET_WIDTH:
+      f.write(chr(tileSet[y][x]          and 0xFF))
+      f.write(chr((tileSet[y][x] shr 8)  and 0xFF))
+      f.write(chr((tileSet[y][x] shr 16) and 0xFF))
+
+var tileSet: TileSet32
 
 # TODO: generate the random Wang Tile Grid
 proc main(): void =
-  for bltr in 0..<16:
-    let filePath = fmt"tile-c-{bltr:02}.ppm"
-    saveWangTile(uint8(bltr), filePath)
-    echo "Generated ", filePath
+  generateTileSet(tileSet)
+  let filePath = "tile-set.ppm"
+  echo "Saving tile set to ", filePath
+  saveTileSet32AsPPM(tileSet, filePath)
 
 when isMainModule:
   main()

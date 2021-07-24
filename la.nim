@@ -16,7 +16,7 @@ const
 
 proc lerp*(x, y, a: float): float = x + (y - x) * a
 
-type Vec*[N: static[int]] = array[0..N-1, float]
+type Vec*[N: static[int]] = array[N, float]
 type RGB* = Vec[3]
 type Vec2* = Vec[2]
 
