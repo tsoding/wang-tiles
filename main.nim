@@ -35,13 +35,20 @@ proc japan(uv: Vec2): RGB =
 #   ...
 #   1111 = 15
 #
-# TODO: gamma correction while doing operations on colors
-# https://learnopengl.com/Advanced-Lighting/Gamma-Correction
 proc wang(bltr: uint8, uv: Vec2): RGB =
   let r = 0.50
   let colors = [
     [1.0, 0.0, 0.0], # 0
     [0.0, 1.0, 1.0], # 1
+
+    # [1.0, 1.0, 0.0], # 0
+    # [0.0, 0.0, 1.0], # 1
+
+    # [0.0, 1.0, 0.0], # 0
+    # [1.0, 0.0, 1.0], # 1
+
+    # [0.0, 0.0, 0.0], # 0
+    # [1.0, 1.0, 1.0], # 1
   ]
   let sides = [
     [1.0, 0.5], # r
@@ -55,6 +62,7 @@ proc wang(bltr: uint8, uv: Vec2): RGB =
     let c = colors[mask and 1]
     result = lerp(result, c, vec[3](t))
     mask = mask shr 1
+  result = pow(result, vec[3](1.0 / 2.2))
 
 # TODO: try to link with stb_image.h and save directly in png
 proc save_wang_tile(bltr: uint8, filePath: string) =
@@ -74,7 +82,7 @@ proc save_wang_tile(bltr: uint8, filePath: string) =
 # TODO: generate the random Wang Tile Grid
 proc main(): void =
   for bltr in 0..<16:
-    let filePath = fmt"tile-{bltr:02}.ppm"
+    let filePath = fmt"tile-c-{bltr:02}.ppm"
     saveWangTile(uint8(bltr), filePath)
     echo "Generated ", filePath
 

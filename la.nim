@@ -56,3 +56,11 @@ proc length*[N: static[int]](a: Vec[N]): float =
 
 proc lerp*[N: static[int]](x, y, a: Vec[N]): Vec[N] =
   x + (y - x) * a
+
+proc sqrt*[N: static[int]](x: Vec[N]): Vec[N] =
+  for i in 0..<N:
+    result[i] = sqrt(x[i])
+
+proc pow*[N: static[int]](x, y: Vec[N]): Vec[N] =
+  for i in 0..<N:
+    result[i] = pow(x[i], y[i])
