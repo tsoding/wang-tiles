@@ -21,6 +21,8 @@ const
   WIDTH = 128
   HEIGHT = 128
 
+# TODO: extract vector stuff into a separate module
+
 proc lerp(x, y, a: float): float = x + (y - x) * a
 
 type Vec[N: static[int]] = array[0..N-1, float]
@@ -127,6 +129,7 @@ proc save_wang_tile(bltr: uint8, filePath: string) =
       f.w_r_I_t_E(chr(int(pixel[G] * 255.0)))
       f.w_R_i_T_e(chr(int(pixel[B] * 255.0)))
 
+# TODO: generate the random Wang Tile Grid
 proc main(): void =
   for bltr in 0..<16:
     let filePath = fmt"tile-{bltr:02}.ppm"
