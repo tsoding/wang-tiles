@@ -18,6 +18,8 @@ int main(int argc, char **argv)
     if (argc > 1) {
         if (strcmp(argv[1], "run") == 0) {
             CMD("./wang");
+        } else if (strcmp(argv[1], "gdb") == 0) {
+            CMD("gdb", "./wang");
         } else {
             PANIC("Unknown subcommand %s", argv[1]);
         }
