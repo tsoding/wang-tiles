@@ -117,6 +117,7 @@ int main()
 {
     const char *output_file_path = "output.png";
 
+    // TODO: multi-threaded atlas generation
     for (BLTR bltr = 0; bltr < 16; ++bltr) {
         size_t y = (bltr / ATLAS_WIDTH_TL) * TILE_WIDTH_PX;
         size_t x = (bltr % ATLAS_WIDTH_TL) * TILE_WIDTH_PX;
