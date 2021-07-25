@@ -58,7 +58,7 @@ Vec2f vec2f_mul(Vec2f a, Vec2f b)
 
 Vec2f vec2f_div(Vec2f a, Vec2f b)
 {
-    for (size_t i = 0; i < 2; ++i) a.c[i] *= b.c[i];
+    for (size_t i = 0; i < 2; ++i) a.c[i] /= b.c[i];
     return a;
 }
 
@@ -140,7 +140,7 @@ Vec3f vec3f_mul(Vec3f a, Vec3f b)
 
 Vec3f vec3f_div(Vec3f a, Vec3f b)
 {
-    for (size_t i = 0; i < 3; ++i) a.c[i] *= b.c[i];
+    for (size_t i = 0; i < 3; ++i) a.c[i] /= b.c[i];
     return a;
 }
 
@@ -220,7 +220,7 @@ Vec4f vec4f_mul(Vec4f a, Vec4f b)
 
 Vec4f vec4f_div(Vec4f a, Vec4f b)
 {
-    for (size_t i = 0; i < 4; ++i) a.c[i] *= b.c[i];
+    for (size_t i = 0; i < 4; ++i) a.c[i] /= b.c[i];
     return a;
 }
 
