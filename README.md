@@ -1,10 +1,10 @@
-# Wang Tiles Grid generator in [Nim](https://nim-lang.org/)
+# Wang Tiles Grid generator in
 
 ## Goal
 
 Trying to generate a random grid of 2-colored [Wang Tiles](http://www.cr31.co.uk/stagecast/wang/intro.html) based on a single function definition:
 
-```nim
+```c
 RGB wang(BLTR bltr, UV uv);
 ```
 
