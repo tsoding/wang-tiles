@@ -1,2 +1,6 @@
 main
+wang
 *.ppm
+nobuild
+*.old
+output.png
