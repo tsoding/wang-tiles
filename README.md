@@ -5,7 +5,7 @@
 Trying to generate a random grid of 2-colored [Wang Tiles](http://www.cr31.co.uk/stagecast/wang/intro.html) based on a single function definition:
 
 ```nim
-proc wang(bltr: uint8, uv: Vec2): RGB = ...
+RGB wang(BLTR bltr, UV uv);
 ```
 
 where
@@ -24,9 +24,10 @@ Here are some tiles we generated so far:
 
 ## Quick Start
 
-Install [Nim](https://nim-lang.org/) compiler first.
+The project is using [nobuild](https://github.com/tsoding/nobuild) build system.
 
 ```console
-$ nim r -d:release main.nim
-$ feh *.ppm
+$ cc -o nobuild nobuild.c
+$ ./nobuild run
+$ feh output.png
 ```
