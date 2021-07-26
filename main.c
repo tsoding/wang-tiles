@@ -111,7 +111,6 @@ void generate_tile32(uint32_t *pixels, size_t width, size_t height, size_t strid
     }
 }
 
-RGBA32 tile[TILE_WIDTH_PX * TILE_HEIGHT_PX];
 RGBA32 atlas[ATLAS_WIDTH_PX * ATLAS_HEIGHT_PX];
 
 // TODO: live view with SDL or something
@@ -133,7 +132,7 @@ int main()
             bltr, wang);
     }
 
-    if (!stbi_write_png(output_file_path, ATLAS_WIDTH_PX, ATLAS_HEIGHT_PX, 4, tile, ATLAS_WIDTH_PX * sizeof(RGBA32))) {
+    if (!stbi_write_png(output_file_path, ATLAS_WIDTH_PX, ATLAS_HEIGHT_PX, 4, atlas, ATLAS_WIDTH_PX * sizeof(RGBA32))) {
         fprintf(stderr, "ERROR: could not save file %s: %s\n", output_file_path,
                 strerror(errno));
         exit(1);
