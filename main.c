@@ -114,6 +114,7 @@ void generate_tile32(uint32_t *pixels, size_t width, size_t height, size_t strid
 RGBA32 tile[TILE_WIDTH_PX * TILE_HEIGHT_PX];
 RGBA32 atlas[ATLAS_WIDTH_PX * ATLAS_HEIGHT_PX];
 
+// TODO: live view with SDL or something
 // TODO: generate the random Wang Tile Grid
 int main()
 {
