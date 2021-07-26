@@ -18,7 +18,8 @@ Think of it as a [Fragment Shader](https://www.khronos.org/opengl/wiki/Fragment_
 
 Here are some Wang Tile Grids we generated so far:
 
-![demo-grid](./demo-grid.png)
+![demo-00](./demo-00.png)
+![demo-01](./demo-01.png)
 
 ## Quick Start
 

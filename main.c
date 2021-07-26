@@ -22,8 +22,8 @@ static_assert(ATLAS_WIDTH_TL * ATLAS_HEIGHT_TL == 16, "The amout of tiles in the
 #define ATLAS_WIDTH_PX (TILE_WIDTH_PX * ATLAS_WIDTH_TL)
 #define ATLAS_HEIGHT_PX (TILE_HEIGHT_PX * ATLAS_HEIGHT_TL)
 
-#define GRID_WIDTH_TL 30
-#define GRID_HEIGHT_TL 30
+#define GRID_WIDTH_TL 15
+#define GRID_HEIGHT_TL 15
 #define GRID_WIDTH_PX (GRID_WIDTH_TL * TILE_WIDTH_PX)
 #define GRID_HEIGHT_PX (GRID_HEIGHT_TL * TILE_HEIGHT_PX)
 
@@ -56,6 +56,25 @@ RGB japan(UV uv)
     return vec3f(1.0f, (float) a, (float) a);
 }
 
+static const RGB colors[] = {
+    {{1.0f, 0.0f, 0.0f}}, // 0
+    {{0.0f, 1.0f, 1.0f}}, // 1
+
+    // {{1.0f, 1.0f, 0.0f}}, // 0
+    // {{0.0f, 0.0f, 1.0f}}, // 1
+
+    // {{0.99f, 0.99f, 0.01f}}, // 0
+    // {{0.01f, 0.01f, 0.99f}}, // 1
+
+    // {{0.0f, 1.0f, 0.0f}}, // 0
+    // {{1.0f, 0.0f, 1.0f}}, // 1
+
+    // {{0.0f, 0.0f, 0.0f}}, // 0
+    // {{1.0f, 1.0f, 1.0f}}, // 1
+};
+static_assert(sizeof(colors) / sizeof(colors[0]) == 2, "colors array must have exactly 2 elements");
+
+
 // TODO: more wang tile ideas:
 // - Metaballs: https://en.wikipedia.org/wiki/Metaballs
 
@@ -73,26 +92,9 @@ RGB japan(UV uv)
 //   1111 = 15
 //
 // TODO: try to speed up the shader with SIMD instructions
-RGB wang(BLTR bltr, UV uv)
+RGB wang_blobs(BLTR bltr, UV uv)
 {
     float r = 0.50;
-    static const RGB colors[] = {
-        // {{1.0f, 0.0f, 0.0f}}, // 0
-        // {{0.0f, 1.0f, 1.0f}}, // 1
-
-        // {{1.0f, 1.0f, 0.0f}}, // 0
-        // {{0.0f, 0.0f, 1.0f}}, // 1
-
-        {{0.99f, 0.99f, 0.01f}}, // 0
-        {{0.01f, 0.01f, 0.99f}}, // 1
-
-        // {{0.0f, 1.0f, 0.0f}}, // 0
-        // {{1.0f, 0.0f, 1.0f}}, // 1
-
-        // {{0.0f, 0.0f, 0.0f}}, // 0
-        // {{1.0f, 1.0f, 1.0f}}, // 1
-    };
-    static_assert(sizeof(colors) / sizeof(colors[0]) == 2, "colors array must have exactly 2 elements");
 
     static const Vec2f sides[4] = {
         {{1.0, 0.5}}, // r
@@ -109,6 +111,35 @@ RGB wang(BLTR bltr, UV uv)
         bltr = bltr >> 1;
     }
     return vec3f_pow(result, vec3fs(1.0f / 2.2f));
+}
+
+RGB wang_digits(BLTR bltr, UV uv)
+{
+    float ds[4] = {
+        1.0f - uv.c[X], // r
+        uv.c[Y],        // t
+        uv.c[X],        // l
+        1.0f - uv.c[Y], // b
+    };
+
+    int index = -1;
+    for (int i = 0; i < 4; ++i) {
+        if (index < 0 || ds[index] > ds[i]) {
+            index = i;
+        }
+    }
+
+    if (ds[index] > 0.25) {
+        float t = 1.0f - (float) bltr / 16.0f;
+        Vec3f result = vec3f_lerp(colors[0], colors[1], vec3fs(t));
+        return vec3f_pow(result, vec3fs(1.0f / 2.2f));
+    }
+
+    while (index-- > 0) {
+        bltr >>= 1;
+    }
+
+    return colors[bltr & 1];
 }
 
 void generate_tile32(uint32_t *pixels, size_t width, size_t height, size_t stride,
@@ -137,7 +168,7 @@ void *generate_tile_thread(void *arg)
     generate_tile32(
         &atlas[y * ATLAS_WIDTH_PX + x],
         TILE_WIDTH_PX, TILE_HEIGHT_PX, ATLAS_WIDTH_PX,
-        bltr, wang);
+        bltr, wang_blobs);
 
     return NULL;
 }
@@ -199,6 +230,8 @@ void copy_pixels32(RGBA32 *dst, size_t dst_stride,
 // TODO: live view with SDL or something
 int main()
 {
+    srand(time(0));
+
     printf("Tile Size: %dx%d\n", TILE_WIDTH_PX, TILE_HEIGHT_PX);
 
     begin_clock("ATLAS RENDERING");
