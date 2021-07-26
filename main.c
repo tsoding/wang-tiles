@@ -13,14 +13,19 @@
 #include "./la.c"
 #include "./prof.c"
 
-#define TILE_WIDTH_PX 256
-#define TILE_HEIGHT_PX 256
+#define TILE_WIDTH_PX 64
+#define TILE_HEIGHT_PX 64
 
 #define ATLAS_WIDTH_TL 4
 #define ATLAS_HEIGHT_TL 4
 static_assert(ATLAS_WIDTH_TL * ATLAS_HEIGHT_TL == 16, "The amout of tiles in the Atlas should be equal to 16 since that's the size of the full Wang Tile set");
 #define ATLAS_WIDTH_PX (TILE_WIDTH_PX * ATLAS_WIDTH_TL)
 #define ATLAS_HEIGHT_PX (TILE_HEIGHT_PX * ATLAS_HEIGHT_TL)
+
+#define GRID_WIDTH_TL 30
+#define GRID_HEIGHT_TL 30
+#define GRID_WIDTH_PX (GRID_WIDTH_TL * TILE_WIDTH_PX)
+#define GRID_HEIGHT_PX (GRID_HEIGHT_TL * TILE_HEIGHT_PX)
 
 typedef uint8_t BLTR;
 typedef RGB (*Frag_Shader)(BLTR bltr, UV uv);
@@ -67,6 +72,7 @@ RGB japan(UV uv)
 //   ...
 //   1111 = 15
 //
+// TODO: try to speed up the shader with SIMD instructions
 RGB wang(BLTR bltr, UV uv)
 {
     float r = 0.50;
@@ -74,8 +80,11 @@ RGB wang(BLTR bltr, UV uv)
         // {{1.0f, 0.0f, 0.0f}}, // 0
         // {{0.0f, 1.0f, 1.0f}}, // 1
 
-        {{1.0f, 1.0f, 0.0f}}, // 0
-        {{0.0f, 0.0f, 1.0f}}, // 1
+        // {{1.0f, 1.0f, 0.0f}}, // 0
+        // {{0.0f, 0.0f, 1.0f}}, // 1
+
+        {{0.99f, 0.99f, 0.01f}}, // 0
+        {{0.01f, 0.01f, 0.99f}}, // 1
 
         // {{0.0f, 1.0f, 0.0f}}, // 0
         // {{1.0f, 0.0f, 1.0f}}, // 1
@@ -116,6 +125,8 @@ void generate_tile32(uint32_t *pixels, size_t width, size_t height, size_t strid
 }
 
 RGBA32 atlas[ATLAS_WIDTH_PX * ATLAS_HEIGHT_PX];
+BLTR grid_tl[GRID_WIDTH_TL * GRID_HEIGHT_TL];
+RGBA32 grid_px[GRID_WIDTH_PX * GRID_HEIGHT_PX];
 
 void *generate_tile_thread(void *arg)
 {
@@ -146,23 +157,159 @@ void generate_atlas(void)
     }
 }
 
+// rand_tile(-a-b)
+//
+// v     = abcd   // value mask
+// p     = 0101   // position mask
+// c     = xyzw   // candidate tile
+//
+// v & p = 0b0d
+// c & p = 0y0w
+//
+// fits(v, p, c) = c & p = v & p
+//
+// Then just bruteforce c checking if it fits() the constraints vp
+// c = 0, 1, 2, ..., 15
+
+BLTR rand_tile(BLTR v, BLTR p)
+{
+    BLTR cs[16] = {0};
+    size_t n = 0;
+
+    for (BLTR c = 0; c < 16; ++c) {
+        if ((c & p) == (v & p)) {
+            cs[n++] = c;
+        }
+    }
+
+    return cs[rand() % n];
+}
+
+void copy_pixels32(RGBA32 *dst, size_t dst_stride,
+                   RGBA32 *src, size_t src_stride,
+                   size_t width, size_t height)
+{
+    while (height-- > 0) {
+        memcpy(dst, src, width * sizeof(RGBA32));
+        dst += dst_stride;
+        src += src_stride;
+    }
+}
+
 // TODO: live view with SDL or something
-// TODO: generate the random Wang Tile Grid
 int main()
 {
     printf("Tile Size: %dx%d\n", TILE_WIDTH_PX, TILE_HEIGHT_PX);
 
-    const char *output_file_path = "output.png";
-
-    begin_clock("ATLAS GEN");
-    generate_atlas();
+    begin_clock("ATLAS RENDERING");
+    {
+        generate_atlas();
+    }
     end_clock();
 
-    begin_clock("PNG OUT");
-    if (!stbi_write_png(output_file_path, ATLAS_WIDTH_PX, ATLAS_HEIGHT_PX, 4, atlas, ATLAS_WIDTH_PX * sizeof(RGBA32))) {
-        fprintf(stderr, "ERROR: could not save file %s: %s\n", output_file_path,
-                strerror(errno));
-        exit(1);
+    begin_clock("GRID GENERATION");
+    {
+        // +---+---+---+
+        // | m | l | l
+        // +---+---+---+
+        // | t |tl |tl
+        // +---+---+---+
+        // | t |tl |tl
+        // +   +   +   +
+        //
+
+        // First Top Left Corner
+        grid_tl[0] = rand_tile(0, 0);
+
+        // First Top Row
+        for (size_t x = 1; x < GRID_WIDTH_TL; ++x) {
+            // p = bltr == 0b0100 == 1 << 2
+            //
+            //                             bltr
+            // grid[x - 1]               = abcd
+            // grid[x - 1] & 0b0001      = 000d
+            // grid[x - 1] & 0b0001 << 2 = 0d00
+            BLTR lp = 1 << 2;
+            BLTR lv = (grid_tl[x - 1] & 1) << 2;
+            grid_tl[x] = rand_tile(lv, lp);
+        }
+
+        // First Left Column
+        for (size_t y = 1; y < GRID_HEIGHT_TL; ++y) {
+            // p = bltr == 0b0010 == 1 << 1
+            // g = grid[(y - 1) * GRID_WIDTH_TL]
+            //
+            //                     bltr
+            // g                 = abcd
+            // g & 0b1000        = a000
+            // (g & 0b1000) >> 2 = 00a0
+            //
+            // v = (g & 8) >> 2
+
+            BLTR tp = 1 << 1;
+            BLTR tv = (grid_tl[(y - 1) * GRID_WIDTH_TL] & 8) >> 2;
+            grid_tl[y * GRID_WIDTH_TL] = rand_tile(tv, tp);
+        }
+
+        // The Rest of the Tiles
+        for (size_t y = 1; y < GRID_HEIGHT_TL; ++y) {
+            for (size_t x = 1; x < GRID_WIDTH_TL; ++x) {
+                //     +---+
+                //     | t |
+                // +---+---+
+                // | l | g |
+                // +---+---+
+                //
+                BLTR lp = 1 << 2;
+                BLTR lv = (grid_tl[y * GRID_WIDTH_TL + x - 1] & 1) << 2;
+                BLTR tp = 1 << 1;
+                BLTR tv = (grid_tl[(y - 1) * GRID_WIDTH_TL + x] & 8) >> 2;
+                grid_tl[y * GRID_WIDTH_TL + x] = rand_tile(lv | tv, lp | tp);
+            }
+        }
+    }
+    end_clock();
+
+    begin_clock("GRID RENDERING");
+    {
+        for (size_t gy_tl = 0; gy_tl < GRID_HEIGHT_TL; ++gy_tl) {
+            for (size_t gx_tl = 0; gx_tl < GRID_WIDTH_TL; ++gx_tl) {
+                BLTR bltr = grid_tl[gy_tl * GRID_HEIGHT_TL + gx_tl];
+                size_t ax_tl = bltr % ATLAS_WIDTH_TL;
+                size_t ay_tl = bltr / ATLAS_WIDTH_TL;
+
+                size_t gx_px = gx_tl * TILE_WIDTH_PX;
+                size_t gy_px = gy_tl * TILE_HEIGHT_PX;
+                size_t ax_px = ax_tl * TILE_WIDTH_PX;
+                size_t ay_px = ay_tl * TILE_HEIGHT_PX;
+
+                copy_pixels32(&grid_px[gy_px * GRID_WIDTH_PX + gx_px], GRID_WIDTH_PX,
+                              &atlas[ay_px * ATLAS_WIDTH_PX + ax_px], ATLAS_WIDTH_PX,
+                              TILE_WIDTH_PX, TILE_HEIGHT_PX);
+            }
+        }
+    }
+    end_clock();
+
+    begin_clock("ATLAS PNG OUTPUT");
+    {
+        const char *output_file_path = "atlas.png";
+        if (!stbi_write_png(output_file_path, ATLAS_WIDTH_PX, ATLAS_HEIGHT_PX, 4, atlas, ATLAS_WIDTH_PX * sizeof(RGBA32))) {
+            fprintf(stderr, "ERROR: could not save file %s: %s\n", output_file_path,
+                    strerror(errno));
+            exit(1);
+        }
+    }
+    end_clock();
+
+    begin_clock("GRID PNG OUTPUT");
+    {
+        const char *output_file_path = "grid.png";
+        if (!stbi_write_png(output_file_path, GRID_WIDTH_PX, GRID_HEIGHT_PX, 4, grid_px, GRID_WIDTH_PX * sizeof(RGBA32))) {
+            fprintf(stderr, "ERROR: could not save file %s: %s\n", output_file_path,
+                    strerror(errno));
+            exit(1);
+        }
     }
     end_clock();
 

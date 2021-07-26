@@ -25,7 +25,7 @@ void end_clock(void)
     }
 
     double elapsed = (tp_end.tv_sec - tp_begin.tv_sec) + (tp_end.tv_nsec - tp_begin.tv_nsec) * 1e-9;
-    fprintf(stderr, "[%s] Clock elapsed time %.9lf secs\n", tp_label, elapsed);
+    fprintf(stderr, "Clock elapsed time %.9lf secs on %s\n", elapsed, tp_label);
 }
 #else
 #define begin_clock(...)

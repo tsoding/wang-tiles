@@ -16,11 +16,9 @@ where
 
 Think of it as a [Fragment Shader](https://www.khronos.org/opengl/wiki/Fragment_Shader) that generates a Texture for a Wang Tile based on its bitmask description.
 
-Here are some tiles we generated so far:
+Here are some Wang Tile Grids we generated so far:
 
-![tile-set](tile-set.png)
-
-**We are yet to implement the actual grid generation...**
+![demo-grid](./demo-grid.png)
 
 ## Quick Start
 
@@ -29,5 +27,6 @@ The project is using [nobuild](https://github.com/tsoding/nobuild) build system.
 ```console
 $ cc -o nobuild nobuild.c
 $ ./nobuild run
-$ feh output.png
+$ feh atlas.png
+$ feh grid.png
 ```
