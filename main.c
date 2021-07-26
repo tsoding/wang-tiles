@@ -303,6 +303,7 @@ int main()
     }
     end_clock();
 
+    // TODO: parallelize grid rendering
     begin_clock("GRID RENDERING");
     {
         for (size_t gy_tl = 0; gy_tl < GRID_HEIGHT_TL; ++gy_tl) {
