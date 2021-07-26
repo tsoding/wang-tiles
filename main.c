@@ -12,9 +12,6 @@
 #define TILE_WIDTH_PX 256
 #define TILE_HEIGHT_PX 256
 
-// TODO: introduce types of pixel and tile units
-// We are actually starting to get bugs of the lack of proper type safety
-
 #define ATLAS_WIDTH_TL 4
 #define ATLAS_HEIGHT_TL 4
 static_assert(ATLAS_WIDTH_TL * ATLAS_HEIGHT_TL == 16, "The amout of tiles in the Atlas should be equal to 16 since that's the size of the full Wang Tile set");
