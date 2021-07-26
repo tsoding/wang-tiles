@@ -1,13 +1,17 @@
+#define _POSIX_C_SOURCE 199309L
 #include <assert.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
 #include <errno.h>
+#include <time.h>
+#include <pthread.h>
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 
 #include "./la.c"
+#include "./prof.c"
 
 #define TILE_WIDTH_PX 256
 #define TILE_HEIGHT_PX 256
@@ -113,24 +117,61 @@ void generate_tile32(uint32_t *pixels, size_t width, size_t height, size_t strid
 
 RGBA32 atlas[ATLAS_WIDTH_PX * ATLAS_HEIGHT_PX];
 
-// TODO: live view with SDL or something
-// TODO: generate the random Wang Tile Grid
-int main()
+void *generate_tile_thread(void *arg)
 {
-    const char *output_file_path = "output.png";
+    size_t bltr = (size_t) arg;
+    size_t y = (bltr / ATLAS_WIDTH_TL) * TILE_WIDTH_PX;
+    size_t x = (bltr % ATLAS_WIDTH_TL) * TILE_WIDTH_PX;
 
-    // TODO: multi-threaded atlas generation
+    generate_tile32(
+        &atlas[y * ATLAS_WIDTH_PX + x],
+        TILE_WIDTH_PX, TILE_HEIGHT_PX, ATLAS_WIDTH_PX,
+        bltr, wang);
+
+    return NULL;
+}
+
+void generate_atlas(void)
+{
+#ifdef THREADED
+    pthread_t threads[16] = {0};
+
+    for (size_t i = 0; i < 16; ++i) {
+        pthread_create(&threads[i], NULL, generate_tile_thread, (void*) i);
+    }
+
+    for (size_t i = 0; i < 16; ++i) {
+        pthread_join(threads[i], NULL);
+    }
+#else
     for (BLTR bltr = 0; bltr < 16; ++bltr) {
         size_t y = (bltr / ATLAS_WIDTH_TL) * TILE_WIDTH_PX;
         size_t x = (bltr % ATLAS_WIDTH_TL) * TILE_WIDTH_PX;
-
-        printf("Generating God Seed %.0f%%...\n", (float) bltr / 15.0f * 100.0f);
-
         generate_tile32(
             &atlas[y * ATLAS_WIDTH_PX + x],
             TILE_WIDTH_PX, TILE_HEIGHT_PX, ATLAS_WIDTH_PX,
             bltr, wang);
     }
+#endif
+}
+
+// TODO: live view with SDL or something
+// TODO: generate the random Wang Tile Grid
+int main()
+{
+    printf("Tile Size: %dx%d\n", TILE_WIDTH_PX, TILE_HEIGHT_PX);
+
+#ifdef THREADED
+    const char *output_file_path = "output-mt.png";
+    printf("Multi-Threaded Mode\n");
+#else
+    const char *output_file_path = "output-st.png";
+    printf("Single-Threaded Mode\n");
+#endif
+
+    begin_clock("ATLAS GEN");
+    generate_atlas();
+    end_clock();
 
     if (!stbi_write_png(output_file_path, ATLAS_WIDTH_PX, ATLAS_HEIGHT_PX, 4, atlas, ATLAS_WIDTH_PX * sizeof(RGBA32))) {
         fprintf(stderr, "ERROR: could not save file %s: %s\n", output_file_path,
