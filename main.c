@@ -131,9 +131,10 @@ void *generate_tile_thread(void *arg)
     return NULL;
 }
 
+// TODO: a runtime parameter to limit the amount of created threads
+// ./wang -j5
 void generate_atlas(void)
 {
-#ifdef THREADED
     pthread_t threads[16] = {0};
 
     for (size_t i = 0; i < 16; ++i) {
@@ -143,16 +144,6 @@ void generate_atlas(void)
     for (size_t i = 0; i < 16; ++i) {
         pthread_join(threads[i], NULL);
     }
-#else
-    for (BLTR bltr = 0; bltr < 16; ++bltr) {
-        size_t y = (bltr / ATLAS_WIDTH_TL) * TILE_WIDTH_PX;
-        size_t x = (bltr % ATLAS_WIDTH_TL) * TILE_WIDTH_PX;
-        generate_tile32(
-            &atlas[y * ATLAS_WIDTH_PX + x],
-            TILE_WIDTH_PX, TILE_HEIGHT_PX, ATLAS_WIDTH_PX,
-            bltr, wang);
-    }
-#endif
 }
 
 // TODO: live view with SDL or something
@@ -161,23 +152,19 @@ int main()
 {
     printf("Tile Size: %dx%d\n", TILE_WIDTH_PX, TILE_HEIGHT_PX);
 
-#ifdef THREADED
-    const char *output_file_path = "output-mt.png";
-    printf("Multi-Threaded Mode\n");
-#else
-    const char *output_file_path = "output-st.png";
-    printf("Single-Threaded Mode\n");
-#endif
+    const char *output_file_path = "output.png";
 
     begin_clock("ATLAS GEN");
     generate_atlas();
     end_clock();
 
+    begin_clock("PNG OUT");
     if (!stbi_write_png(output_file_path, ATLAS_WIDTH_PX, ATLAS_HEIGHT_PX, 4, atlas, ATLAS_WIDTH_PX * sizeof(RGBA32))) {
         fprintf(stderr, "ERROR: could not save file %s: %s\n", output_file_path,
                 strerror(errno));
         exit(1);
     }
+    end_clock();
 
     printf("Generated Dream Seed forsenCD\n");
 
