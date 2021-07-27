@@ -1,6 +1,6 @@
 # Wang Tiles Grid generator
 
-![thumbnail](./imgs/thumbnail.png)
+![thumbnail](./imgs/grid-01.png)
 
 ## Quick Start
 
