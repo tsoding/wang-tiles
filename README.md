@@ -29,10 +29,21 @@ where
 
 Think of it as a [Fragment Shader](https://www.khronos.org/opengl/wiki/Fragment_Shader) that generates a Texture for a Wang Tile based on its bitmask description.
 
-Here are some Wang Tile Grids we generated so far:
+## Phases
 
-![demo-00](./demo-00.png)
-![demo-01](./demo-01.png)
+The whole rendering is split into roughly 3 phases and done entirely on CPU.
 
+### Phase 1. Atlas Rendering
 
+Given the "Shader" function described in the [Goal](#goal) section we generate an atlas (spritesheet) of all 16 Wang Tiles. (4 sides, 2 colors, 2⁴ = 16)
+
+![atlas-00](./imgs/atlas-00.png) ![atlas-01](./imgs/atlas-01.png)
+
+### Phase 2. Grid Generation
+
+<!-- TODO: grid generation section -->
+
+### Phase 3. Grid Rendering
+
+<!-- TODO: grid rendering section -->
 
