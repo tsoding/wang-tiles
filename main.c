@@ -240,6 +240,8 @@ int main()
     }
     end_clock();
 
+    // TODO: Could we do atlas rendering and grid generation in parallel?
+    // Grid generation and atlas rendering are completely independant.
     begin_clock("GRID GENERATION");
     {
         // +---+---+---+
