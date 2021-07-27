@@ -47,3 +47,6 @@ Given the "Shader" function described in the [Goal](#goal) section we generate a
 
 <!-- TODO: grid rendering section -->
 
+## Screencasts
+
+The development was streamed on [Twitch](https://twitch.tv/tsoding). Here is an archive of screencasts: https://www.youtube.com/playlist?list=PLpM-Dvs8t0VYgJXZyQzWjfYUm3MxcvqR0
