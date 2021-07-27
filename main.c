@@ -13,6 +13,8 @@
 #include "./la.c"
 #include "./prof.c"
 
+// TODO: make <TILE_WIDTH_PX>x<TILE_HEIGHT_PX> and <GRID_WIDTH_TL>x<GRID_HEIGHT_TL> runtime parameters
+
 #define TILE_WIDTH_PX 64
 #define TILE_HEIGHT_PX 64
 
