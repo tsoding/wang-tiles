@@ -1,4 +1,7 @@
-# Wang Tiles Grid generator in
+# Wang Tiles Grid generator
+
+![thumbnail](./imgs/thumbnail.png)
+
 
 ## Goal
 
