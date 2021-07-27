@@ -58,6 +58,7 @@ RGB japan(UV uv)
     return vec3f(1.0f, (float) a, (float) a);
 }
 
+// TODO: colors as runtime parameters
 static const RGB colors[] = {
     {{1.0f, 0.0f, 0.0f}}, // 0
     {{0.0f, 1.0f, 1.0f}}, // 1
