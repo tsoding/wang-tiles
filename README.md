@@ -4,7 +4,7 @@
 
 ## Quick Start
 
-The project is using [nobuild](https://github.com/tsoding/nobuild) build system.
+The project is using [nobuild](https://github.com/tsoding/nobuild#nobuild) build system.
 
 ```console
 $ cc -o nobuild nobuild.c
