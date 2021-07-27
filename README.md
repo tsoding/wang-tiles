@@ -18,6 +18,12 @@ $ feh grid.png
 Trying to generate a random grid of 2-colored [Wang Tiles](http://www.cr31.co.uk/stagecast/wang/intro.html) based on a single function definition:
 
 ```c
+typedef struct { float c[2]; } Vec2f;
+typedef struct { float c[3]; } Vec3f;
+typedef Vec2f UV;
+typedef Vec3f RGB;
+typedef uint8_t BLTR;
+
 RGB wang(BLTR bltr, UV uv);
 ```
 
@@ -41,7 +47,7 @@ Given the "Shader" function described in the [Goal](#goal) section we generate a
 
 ### Phase 2. Grid Generation
 
-<!-- TODO: grid generation section -->
+Given the size of the grid in tiles we generate 2D array of `BLTR`-s (defined in the [Goal](#goal) section) satisfying the Wang Tile constraints between the tiles (the adjacent side of the tiles must have the same color).
 
 ### Phase 3. Grid Rendering
 
