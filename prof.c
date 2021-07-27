@@ -4,6 +4,7 @@
 struct timespec tp_begin;
 struct timespec tp_end;
 const char *tp_label;
+// TODO: nested time measuring
 
 void begin_clock(const char *label)
 {
