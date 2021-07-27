@@ -313,7 +313,7 @@ int main()
     {
         for (size_t gy_tl = 0; gy_tl < GRID_HEIGHT_TL; ++gy_tl) {
             for (size_t gx_tl = 0; gx_tl < GRID_WIDTH_TL; ++gx_tl) {
-                BLTR bltr = grid_tl[gy_tl * GRID_HEIGHT_TL + gx_tl];
+                BLTR bltr = grid_tl[gy_tl * GRID_WIDTH_TL + gx_tl];
                 size_t ax_tl = bltr % ATLAS_WIDTH_TL;
                 size_t ay_tl = bltr / ATLAS_WIDTH_TL;
 
