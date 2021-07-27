@@ -62,17 +62,15 @@ Vec2f vec2f_div(Vec2f a, Vec2f b)
     return a;
 }
 
-// TODO: use (fminf|fmaxf) in vec*f_(min|max) operations
-
 Vec2f vec2f_max(Vec2f a, Vec2f b)
 {
-    for (size_t i = 0; i < 2; ++i) if (a.c[i] < b.c[i]) a.c[i] = b.c[i];
+    for (size_t i = 0; i < 2; ++i) a.c[i] = fmaxf(a.c[i], b.c[i]);
     return a;
 }
 
 Vec2f vec2f_min(Vec2f a, Vec2f b)
 {
-    for (size_t i = 0; i < 2; ++i) if (a.c[i] > b.c[i]) a.c[i] = b.c[i];
+    for (size_t i = 0; i < 2; ++i) a.c[i] = fminf(a.c[i], b.c[i]);
     return a;
 }
 
@@ -146,13 +144,13 @@ Vec3f vec3f_div(Vec3f a, Vec3f b)
 
 Vec3f vec3f_max(Vec3f a, Vec3f b)
 {
-    for (size_t i = 0; i < 3; ++i) if (a.c[i] < b.c[i]) a.c[i] = b.c[i];
+    for (size_t i = 0; i < 3; ++i) a.c[i] = fmaxf(a.c[i], b.c[i]);
     return a;
 }
 
 Vec3f vec3f_min(Vec3f a, Vec3f b)
 {
-    for (size_t i = 0; i < 3; ++i) if (a.c[i] > b.c[i]) a.c[i] = b.c[i];
+    for (size_t i = 0; i < 3; ++i) a.c[i] = fminf(a.c[i], b.c[i]);
     return a;
 }
 
@@ -226,13 +224,13 @@ Vec4f vec4f_div(Vec4f a, Vec4f b)
 
 Vec4f vec4f_max(Vec4f a, Vec4f b)
 {
-    for (size_t i = 0; i < 4; ++i) if (a.c[i] < b.c[i]) a.c[i] = b.c[i];
+    for (size_t i = 0; i < 4; ++i) a.c[i] = fmaxf(a.c[i], b.c[i]);
     return a;
 }
 
 Vec4f vec4f_min(Vec4f a, Vec4f b)
 {
-    for (size_t i = 0; i < 4; ++i) if (a.c[i] > b.c[i]) a.c[i] = b.c[i];
+    for (size_t i = 0; i < 4; ++i) a.c[i] = fminf(a.c[i], b.c[i]);
     return a;
 }
 
