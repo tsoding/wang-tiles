@@ -2,6 +2,16 @@
 
 ![thumbnail](./imgs/thumbnail.png)
 
+## Quick Start
+
+The project is using [nobuild](https://github.com/tsoding/nobuild) build system.
+
+```console
+$ cc -o nobuild nobuild.c
+$ ./nobuild run
+$ feh atlas.png
+$ feh grid.png
+```
 
 ## Goal
 
@@ -24,13 +34,5 @@ Here are some Wang Tile Grids we generated so far:
 ![demo-00](./demo-00.png)
 ![demo-01](./demo-01.png)
 
-## Quick Start
 
-The project is using [nobuild](https://github.com/tsoding/nobuild) build system.
 
-```console
-$ cc -o nobuild nobuild.c
-$ ./nobuild run
-$ feh atlas.png
-$ feh grid.png
-```
