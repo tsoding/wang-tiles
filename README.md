@@ -51,7 +51,10 @@ Given the size of the grid in tiles we generate 2D array of `BLTR`-s (defined in
 
 ### Phase 3. Grid Rendering
 
-<!-- TODO: grid rendering section -->
+After the [Atlas](#phase-1-atlas-rendering) and the [Grid](#phase-2-grid-generation) are generated we iterate over each `BLTR` in the Grid and copy the corresponding tiles from the Atlas into the final Grid image.
+
+![grid-00](./imgs/grid-00.png)
+![grid-01](./imgs/grid-01.png)
 
 ## Screencasts
 
