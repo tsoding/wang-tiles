@@ -14,6 +14,10 @@ int main(int argc, char **argv)
 {
     GO_REBUILD_URSELF(argc, argv);
 
+    // TODO: nobuild subcommand to regenerate ./imgs/*
+    // TODO: MSVC support for nobuild
+    // TODO: CI
+
     if (argc > 1) {
         if (strcmp(argv[1], "run") == 0) {
             CMD(cc(), CFLAGS, "-o", "wang", "src/main.c", LIBS);
