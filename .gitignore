@@ -1,6 +1,5 @@
-main
 wang
-*.ppm
 nobuild
 *.old
-output.png
+atlas.png
+grid.png
