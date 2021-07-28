@@ -230,7 +230,7 @@ void copy_pixels32(RGBA32 *dst, size_t dst_stride,
     }
 }
 
-// TODO: live view with SDL or something
+// TODO: live rendering with Xlib
 int main()
 {
     srand(time(0));
