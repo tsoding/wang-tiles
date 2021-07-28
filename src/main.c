@@ -168,10 +168,11 @@ void *generate_tile_thread(void *arg)
     size_t y = (bltr / ATLAS_WIDTH_TL) * TILE_WIDTH_PX;
     size_t x = (bltr % ATLAS_WIDTH_TL) * TILE_WIDTH_PX;
 
+    // TODO: the tile shader as the runtime parameter
     generate_tile32(
         &atlas[y * ATLAS_WIDTH_PX + x],
         TILE_WIDTH_PX, TILE_HEIGHT_PX, ATLAS_WIDTH_PX,
-        bltr, wang_blobs);
+        bltr, wang_digits);
 
     return NULL;
 }
