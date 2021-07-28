@@ -24,8 +24,8 @@ static_assert(ATLAS_WIDTH_TL * ATLAS_HEIGHT_TL == 16, "The amout of tiles in the
 #define ATLAS_WIDTH_PX (TILE_WIDTH_PX * ATLAS_WIDTH_TL)
 #define ATLAS_HEIGHT_PX (TILE_HEIGHT_PX * ATLAS_HEIGHT_TL)
 
-#define GRID_WIDTH_TL 25
-#define GRID_HEIGHT_TL 5
+#define GRID_WIDTH_TL 30
+#define GRID_HEIGHT_TL 17
 #define GRID_WIDTH_PX (GRID_WIDTH_TL * TILE_WIDTH_PX)
 #define GRID_HEIGHT_PX (GRID_HEIGHT_TL * TILE_HEIGHT_PX)
 
@@ -235,124 +235,134 @@ int main()
 {
     srand(time(0));
 
-    printf("Tile Size: %dx%d\n", TILE_WIDTH_PX, TILE_HEIGHT_PX);
+    printf("Tile Size (px): %dx%d\n", TILE_WIDTH_PX, TILE_HEIGHT_PX);
+    printf("Grid Size (tl): %dx%d\n", GRID_WIDTH_TL, GRID_HEIGHT_TL);
+    printf("Grid Size (px): %dx%d\n", GRID_WIDTH_PX, GRID_HEIGHT_PX);
 
-    begin_clock("ATLAS RENDERING");
+    begin_clock("TOTAL");
     {
-        generate_atlas();
-    }
-    end_clock();
+        begin_clock("RENDERING");
+        {
+            begin_clock("ATLAS RENDERING");
+            {
+                generate_atlas();
+            }
+            end_clock();
 
-    // TODO: Could we do atlas rendering and grid generation in parallel?
-    // Grid generation and atlas rendering are completely independant.
-    begin_clock("GRID GENERATION");
-    {
-        // +---+---+---+
-        // | m | l | l
-        // +---+---+---+
-        // | t |tl |tl
-        // +---+---+---+
-        // | t |tl |tl
-        // +   +   +   +
-        //
-
-        // First Top Left Corner
-        grid_tl[0] = rand_tile(0, 0);
-
-        // First Top Row
-        for (size_t x = 1; x < GRID_WIDTH_TL; ++x) {
-            // p = bltr == 0b0100 == 1 << 2
-            //
-            //                             bltr
-            // grid[x - 1]               = abcd
-            // grid[x - 1] & 0b0001      = 000d
-            // grid[x - 1] & 0b0001 << 2 = 0d00
-            BLTR lp = 1 << 2;
-            BLTR lv = (grid_tl[x - 1] & 1) << 2;
-            grid_tl[x] = rand_tile(lv, lp);
-        }
-
-        // First Left Column
-        for (size_t y = 1; y < GRID_HEIGHT_TL; ++y) {
-            // p = bltr == 0b0010 == 1 << 1
-            // g = grid[(y - 1) * GRID_WIDTH_TL]
-            //
-            //                     bltr
-            // g                 = abcd
-            // g & 0b1000        = a000
-            // (g & 0b1000) >> 2 = 00a0
-            //
-            // v = (g & 8) >> 2
-
-            BLTR tp = 1 << 1;
-            BLTR tv = (grid_tl[(y - 1) * GRID_WIDTH_TL] & 8) >> 2;
-            grid_tl[y * GRID_WIDTH_TL] = rand_tile(tv, tp);
-        }
-
-        // The Rest of the Tiles
-        for (size_t y = 1; y < GRID_HEIGHT_TL; ++y) {
-            for (size_t x = 1; x < GRID_WIDTH_TL; ++x) {
-                //     +---+
-                //     | t |
-                // +---+---+
-                // | l | g |
-                // +---+---+
+            // TODO: Could we do atlas rendering and grid generation in parallel?
+            // Grid generation and atlas rendering are completely independant.
+            begin_clock("GRID GENERATION");
+            {
+                // +---+---+---+
+                // | m | l | l
+                // +---+---+---+
+                // | t |tl |tl
+                // +---+---+---+
+                // | t |tl |tl
+                // +   +   +   +
                 //
-                BLTR lp = 1 << 2;
-                BLTR lv = (grid_tl[y * GRID_WIDTH_TL + x - 1] & 1) << 2;
-                BLTR tp = 1 << 1;
-                BLTR tv = (grid_tl[(y - 1) * GRID_WIDTH_TL + x] & 8) >> 2;
-                grid_tl[y * GRID_WIDTH_TL + x] = rand_tile(lv | tv, lp | tp);
+
+                // First Top Left Corner
+                grid_tl[0] = rand_tile(0, 0);
+
+                // First Top Row
+                for (size_t x = 1; x < GRID_WIDTH_TL; ++x) {
+                    // p = bltr == 0b0100 == 1 << 2
+                    //
+                    //                             bltr
+                    // grid[x - 1]               = abcd
+                    // grid[x - 1] & 0b0001      = 000d
+                    // grid[x - 1] & 0b0001 << 2 = 0d00
+                    BLTR lp = 1 << 2;
+                    BLTR lv = (grid_tl[x - 1] & 1) << 2;
+                    grid_tl[x] = rand_tile(lv, lp);
+                }
+
+                // First Left Column
+                for (size_t y = 1; y < GRID_HEIGHT_TL; ++y) {
+                    // p = bltr == 0b0010 == 1 << 1
+                    // g = grid[(y - 1) * GRID_WIDTH_TL]
+                    //
+                    //                     bltr
+                    // g                 = abcd
+                    // g & 0b1000        = a000
+                    // (g & 0b1000) >> 2 = 00a0
+                    //
+                    // v = (g & 8) >> 2
+
+                    BLTR tp = 1 << 1;
+                    BLTR tv = (grid_tl[(y - 1) * GRID_WIDTH_TL] & 8) >> 2;
+                    grid_tl[y * GRID_WIDTH_TL] = rand_tile(tv, tp);
+                }
+
+                // The Rest of the Tiles
+                for (size_t y = 1; y < GRID_HEIGHT_TL; ++y) {
+                    for (size_t x = 1; x < GRID_WIDTH_TL; ++x) {
+                        //     +---+
+                        //     | t |
+                        // +---+---+
+                        // | l | g |
+                        // +---+---+
+                        //
+                        BLTR lp = 1 << 2;
+                        BLTR lv = (grid_tl[y * GRID_WIDTH_TL + x - 1] & 1) << 2;
+                        BLTR tp = 1 << 1;
+                        BLTR tv = (grid_tl[(y - 1) * GRID_WIDTH_TL + x] & 8) >> 2;
+                        grid_tl[y * GRID_WIDTH_TL + x] = rand_tile(lv | tv, lp | tp);
+                    }
+                }
+            }
+            end_clock();
+
+            // TODO: parallelize grid rendering
+            begin_clock("GRID RENDERING");
+            {
+                for (size_t gy_tl = 0; gy_tl < GRID_HEIGHT_TL; ++gy_tl) {
+                    for (size_t gx_tl = 0; gx_tl < GRID_WIDTH_TL; ++gx_tl) {
+                        BLTR bltr = grid_tl[gy_tl * GRID_WIDTH_TL + gx_tl];
+                        size_t ax_tl = bltr % ATLAS_WIDTH_TL;
+                        size_t ay_tl = bltr / ATLAS_WIDTH_TL;
+
+                        size_t gx_px = gx_tl * TILE_WIDTH_PX;
+                        size_t gy_px = gy_tl * TILE_HEIGHT_PX;
+                        size_t ax_px = ax_tl * TILE_WIDTH_PX;
+                        size_t ay_px = ay_tl * TILE_HEIGHT_PX;
+
+                        copy_pixels32(&grid_px[gy_px * GRID_WIDTH_PX + gx_px], GRID_WIDTH_PX,
+                                      &atlas[ay_px * ATLAS_WIDTH_PX + ax_px], ATLAS_WIDTH_PX,
+                                      TILE_WIDTH_PX, TILE_HEIGHT_PX);
+                    }
+                }
+            }
+            end_clock();
+        }
+        end_clock();
+
+        begin_clock("ATLAS PNG OUTPUT");
+        {
+            const char *output_file_path = "atlas.png";
+            if (!stbi_write_png(output_file_path, ATLAS_WIDTH_PX, ATLAS_HEIGHT_PX, 4, atlas, ATLAS_WIDTH_PX * sizeof(RGBA32))) {
+                fprintf(stderr, "ERROR: could not save file %s: %s\n", output_file_path,
+                        strerror(errno));
+                exit(1);
             }
         }
-    }
-    end_clock();
+        end_clock();
 
-    // TODO: parallelize grid rendering
-    begin_clock("GRID RENDERING");
-    {
-        for (size_t gy_tl = 0; gy_tl < GRID_HEIGHT_TL; ++gy_tl) {
-            for (size_t gx_tl = 0; gx_tl < GRID_WIDTH_TL; ++gx_tl) {
-                BLTR bltr = grid_tl[gy_tl * GRID_WIDTH_TL + gx_tl];
-                size_t ax_tl = bltr % ATLAS_WIDTH_TL;
-                size_t ay_tl = bltr / ATLAS_WIDTH_TL;
-
-                size_t gx_px = gx_tl * TILE_WIDTH_PX;
-                size_t gy_px = gy_tl * TILE_HEIGHT_PX;
-                size_t ax_px = ax_tl * TILE_WIDTH_PX;
-                size_t ay_px = ay_tl * TILE_HEIGHT_PX;
-
-                copy_pixels32(&grid_px[gy_px * GRID_WIDTH_PX + gx_px], GRID_WIDTH_PX,
-                              &atlas[ay_px * ATLAS_WIDTH_PX + ax_px], ATLAS_WIDTH_PX,
-                              TILE_WIDTH_PX, TILE_HEIGHT_PX);
+        begin_clock("GRID PNG OUTPUT");
+        {
+            const char *output_file_path = "grid.png";
+            if (!stbi_write_png(output_file_path, GRID_WIDTH_PX, GRID_HEIGHT_PX, 4, grid_px, GRID_WIDTH_PX * sizeof(RGBA32))) {
+                fprintf(stderr, "ERROR: could not save file %s: %s\n", output_file_path,
+                        strerror(errno));
+                exit(1);
             }
         }
+        end_clock();
     }
     end_clock();
 
-    begin_clock("ATLAS PNG OUTPUT");
-    {
-        const char *output_file_path = "atlas.png";
-        if (!stbi_write_png(output_file_path, ATLAS_WIDTH_PX, ATLAS_HEIGHT_PX, 4, atlas, ATLAS_WIDTH_PX * sizeof(RGBA32))) {
-            fprintf(stderr, "ERROR: could not save file %s: %s\n", output_file_path,
-                    strerror(errno));
-            exit(1);
-        }
-    }
-    end_clock();
-
-    begin_clock("GRID PNG OUTPUT");
-    {
-        const char *output_file_path = "grid.png";
-        if (!stbi_write_png(output_file_path, GRID_WIDTH_PX, GRID_HEIGHT_PX, 4, grid_px, GRID_WIDTH_PX * sizeof(RGBA32))) {
-            fprintf(stderr, "ERROR: could not save file %s: %s\n", output_file_path,
-                    strerror(errno));
-            exit(1);
-        }
-    }
-    end_clock();
-
-    printf("Generated Dream Seed forsenCD\n");
+    dump_summary(stdout);
 
     return 0;
 }
