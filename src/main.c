@@ -472,6 +472,7 @@ int main(int argc, char **argv)
 
     int live = 0;
 
+    // TODO: implement Go flag-like module for parsing parameters
     while (argc > 0) {
         const char *param = shift_args(&argc, &argv);
 
