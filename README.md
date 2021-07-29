@@ -8,9 +8,8 @@ The project is using [nobuild](https://github.com/tsoding/nobuild#nobuild) build
 
 ```console
 $ cc -o nobuild nobuild.c
-$ ./nobuild run
-$ feh atlas.png
-$ feh grid.png
+$ ./nobuild
+$ ./wang -live
 ```
 
 ## Goal
