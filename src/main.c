@@ -388,7 +388,7 @@ void live_rendering_with_xlib(void)
     XCloseDisplay(display);
 }
 
-void offline_rendering_into_png_files(void)
+void offline_rendering_into_png_files(const char *atlas_png_path, const char *grid_png_path)
 {
     begin_clock("TOTAL");
     {
@@ -416,31 +416,27 @@ void offline_rendering_into_png_files(void)
         }
         end_clock();
 
-        // TODO: customize output png file name via CLI params
-
         begin_clock("ATLAS PNG OUTPUT");
         {
-            const char *output_file_path = "atlas.png";
-            if (!stbi_write_png(output_file_path, ATLAS_WIDTH_PX, ATLAS_HEIGHT_PX, 4, atlas, ATLAS_WIDTH_PX * sizeof(RGBA32))) {
-                fprintf(stderr, "ERROR: could not save file %s: %s\n", output_file_path,
+            if (!stbi_write_png(atlas_png_path, ATLAS_WIDTH_PX, ATLAS_HEIGHT_PX, 4, atlas, ATLAS_WIDTH_PX * sizeof(RGBA32))) {
+                fprintf(stderr, "ERROR: could not save file %s: %s\n", atlas_png_path,
                         strerror(errno));
                 exit(1);
             }
-            printf("Atlas saved to %s\n", output_file_path);
         }
         end_clock();
+        printf("Atlas saved to %s\n", atlas_png_path);
 
         begin_clock("GRID PNG OUTPUT");
         {
-            const char *output_file_path = "grid.png";
-            if (!stbi_write_png(output_file_path, GRID_WIDTH_PX, GRID_HEIGHT_PX, 4, grid_px, GRID_WIDTH_PX * sizeof(RGBA32))) {
-                fprintf(stderr, "ERROR: could not save file %s: %s\n", output_file_path,
+            if (!stbi_write_png(grid_png_path, GRID_WIDTH_PX, GRID_HEIGHT_PX, 4, grid_px, GRID_WIDTH_PX * sizeof(RGBA32))) {
+                fprintf(stderr, "ERROR: could not save file %s: %s\n", grid_png_path,
                         strerror(errno));
                 exit(1);
             }
-            printf("Grid saved to %s\n", output_file_path);
         }
         end_clock();
+        printf("Grid saved to %s\n", grid_png_path);
     }
     end_clock();
 
@@ -461,9 +457,11 @@ void help(const char *program, FILE *stream)
 {
     fprintf(stream, "Usage: %s [OPTIONS]\n", program);
     fprintf(stream, "OPTIONS:\n");
-    fprintf(stream, "    -help        Print this help message to stdout and exit with 0 code\n");
-    fprintf(stream, "    -live        Animate and render the Wang Tiles in \"real time\"\n");
-    fprintf(stream, "                 in a separate X11 window\n");
+    fprintf(stream, "    -help                     Print this help message to stdout and exit with 0 code\n");
+    fprintf(stream, "    -live                     Animate and render the Wang Tiles in \"real time\"\n");
+    fprintf(stream, "                              in a separate X11 window\n");
+    fprintf(stream, "    -atlas-png <atlas.png>    Path to the output atlas.png file (default: \"atlas.png\")\n");
+    fprintf(stream, "    -grid-png <grid.png>      Path to the output grid.png file (default: \"grid.png\")\n");
 }
 
 int main(int argc, char **argv)
@@ -471,6 +469,8 @@ int main(int argc, char **argv)
     const char *program = shift_args(&argc, &argv);
 
     int live = 0;
+    const char *atlas_png_path = "atlas.png";
+    const char *grid_png_path = "grid.png";
 
     // TODO: implement Go flag-like module for parsing parameters
     while (argc > 0) {
@@ -481,6 +481,20 @@ int main(int argc, char **argv)
         } else if (strcmp(param, "-help") == 0) {
             help(program, stdout);
             exit(0);
+        } else if (strcmp(param, "-atlas-png") == 0) {
+            if (argc <= 0) {
+                help(program, stderr);
+                fprintf(stderr, "ERROR: %s: no argument is provided", param);
+                exit(1);
+            }
+            atlas_png_path = shift_args(&argc, &argv);
+        } else if (strcmp(param, "-grid-png") == 0) {
+            if (argc <= 0) {
+                help(program, stderr);
+                fprintf(stderr, "ERROR: %s: no argument is provided", param);
+                exit(1);
+            }
+            grid_png_path = shift_args(&argc, &argv);
         } else {
             help(program, stderr);
             fprintf(stderr, "ERROR: %s: unknown parameter\n", param);
@@ -497,7 +511,7 @@ int main(int argc, char **argv)
     if (live) {
         live_rendering_with_xlib();
     } else {
-        offline_rendering_into_png_files();
+        offline_rendering_into_png_files(atlas_png_path, grid_png_path);
     }
 
     return 0;

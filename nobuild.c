@@ -26,8 +26,6 @@ int main(int argc, char **argv)
     // Requires CLI params
     // - [ ] -tile <width>x<height>
     // - [ ] -grid <width>x<height>
-    // - [ ] -atlas-png-path <path/to/atlas.png>
-    // - [ ] -grid-png-path <path/to/grid.png>
     // - [ ] -shader <blobs|digits>
 
     if (argc > 1) {
