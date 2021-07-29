@@ -185,9 +185,11 @@ void *generate_tile_thread(void *arg)
 // ./wang -j5
 void render_atlas(void)
 {
+    // TODO: it would be nice to figure out how to not recreate the threads on each render_atlas()
     pthread_t threads[16] = {0};
 
     for (size_t i = 0; i < 16; ++i) {
+        // TODO: can we get rid of pthread dependency on Linux completely and just use clone(2) directly
         pthread_create(&threads[i], NULL, generate_tile_thread, (void*) i);
     }
 
