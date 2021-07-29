@@ -330,6 +330,11 @@ void live_rendering_with_xlib(void)
         exit(1);
     }
 
+    // TODO: More control over the Visual that is used by live_rendering_with_xlib()
+    // Right now we use whatever Visual that is picked by XCreateSimpleWindow
+    // Since our render only works with 32bit RGBA pixels we need to be more explicit about
+    // what we expect from X11. Probably need to write some code that grabs the list of available
+    // Visuals and use the most suited one.
     Window window = XCreateSimpleWindow(
                         display,
                         XDefaultRootWindow(display),
