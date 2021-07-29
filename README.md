@@ -21,7 +21,7 @@ typedef struct { float c[2]; } Vec2f;
 typedef struct { float c[3]; } Vec3f;
 typedef Vec2f UV;
 typedef Vec3f RGB;
-typedef uint8_t BLTR;
+typedef uint32_t BLTR;
 
 RGB wang(BLTR bltr, UV uv);
 ```

@@ -31,7 +31,7 @@ static_assert(ATLAS_WIDTH_TL * ATLAS_HEIGHT_TL == 16, "The amout of tiles in the
 #define GRID_WIDTH_PX (GRID_WIDTH_TL * TILE_WIDTH_PX)
 #define GRID_HEIGHT_PX (GRID_HEIGHT_TL * TILE_HEIGHT_PX)
 
-typedef uint8_t BLTR;
+typedef uint32_t BLTR;
 typedef RGB (*Frag_Shader)(BLTR bltr, UV uv);
 typedef uint32_t RGBA32;
 
