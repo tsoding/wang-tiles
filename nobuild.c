@@ -1,8 +1,8 @@
 #define NOBUILD_IMPLEMENTATION
 #include "./nobuild.h"
 
-#define CFLAGS "-DPROF", "-O3", "-Wall", "-Wextra", "-Wswitch-enum", "-std=c11", "-pedantic", "-ggdb"
-#define LIBS "-lm", "-lpthread"
+#define CFLAGS /*"-DPROF", */"-O3", "-Wall", "-Wextra", "-Wswitch-enum", "-std=c11", "-pedantic", "-ggdb"
+#define LIBS "-lm", "-lpthread", "-lX11"
 
 const char *cc(void)
 {

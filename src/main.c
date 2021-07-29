@@ -7,6 +7,8 @@
 #include <time.h>
 #include <pthread.h>
 
+#include <X11/Xlib.h>
+
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 
@@ -15,8 +17,8 @@
 
 // TODO: make <TILE_WIDTH_PX>x<TILE_HEIGHT_PX> and <GRID_WIDTH_TL>x<GRID_HEIGHT_TL> runtime parameters
 
-#define TILE_WIDTH_PX 64
-#define TILE_HEIGHT_PX 64
+#define TILE_WIDTH_PX 128
+#define TILE_HEIGHT_PX 128
 
 #define ATLAS_WIDTH_TL 4
 #define ATLAS_HEIGHT_TL 4
@@ -24,8 +26,8 @@ static_assert(ATLAS_WIDTH_TL * ATLAS_HEIGHT_TL == 16, "The amout of tiles in the
 #define ATLAS_WIDTH_PX (TILE_WIDTH_PX * ATLAS_WIDTH_TL)
 #define ATLAS_HEIGHT_PX (TILE_HEIGHT_PX * ATLAS_HEIGHT_TL)
 
-#define GRID_WIDTH_TL 30
-#define GRID_HEIGHT_TL 17
+#define GRID_WIDTH_TL 13
+#define GRID_HEIGHT_TL 10
 #define GRID_WIDTH_PX (GRID_WIDTH_TL * TILE_WIDTH_PX)
 #define GRID_HEIGHT_PX (GRID_HEIGHT_TL * TILE_HEIGHT_PX)
 
@@ -60,8 +62,8 @@ RGB japan(UV uv)
 
 // TODO: colors as runtime parameters
 static const RGB colors[] = {
-    {{1.0f, 0.0f, 0.0f}}, // 0
-    {{0.0f, 1.0f, 1.0f}}, // 1
+    // {{1.0f, 0.0f, 0.0f}}, // 0
+    // {{0.0f, 1.0f, 1.0f}}, // 1
 
     // {{1.0f, 1.0f, 0.0f}}, // 0
     // {{0.0f, 0.0f, 1.0f}}, // 1
@@ -72,11 +74,11 @@ static const RGB colors[] = {
     // {{0.0f, 1.0f, 0.0f}}, // 0
     // {{1.0f, 0.0f, 1.0f}}, // 1
 
-    // {{0.0f, 0.0f, 0.0f}}, // 0
-    // {{1.0f, 1.0f, 1.0f}}, // 1
+    {{0.0f, 0.0f, 0.0f}}, // 0
+    {{1.0f, 1.0f, 1.0f}}, // 1
 };
 static_assert(sizeof(colors) / sizeof(colors[0]) == 2, "colors array must have exactly 2 elements");
-
+float time_uniform = 0.0f;
 
 // TODO: more wang tile ideas:
 // - Metaballs: https://en.wikipedia.org/wiki/Metaballs
@@ -97,7 +99,7 @@ static_assert(sizeof(colors) / sizeof(colors[0]) == 2, "colors array must have e
 // TODO: try to speed up the shader with SIMD instructions
 RGB wang_blobs(BLTR bltr, UV uv)
 {
-    float r = 0.50;
+    float r = lerpf(0.0f, 1.0f, (sinf(time_uniform * 2.0f) + 1.0f) / 2.0f);
 
     static const Vec2f sides[4] = {
         {{1.0, 0.5}}, // r
@@ -132,7 +134,9 @@ RGB wang_digits(BLTR bltr, UV uv)
         }
     }
 
-    if (ds[index] > 0.25) {
+    float r = lerpf(0.0f, 0.5f, (sinf(time_uniform * 1.0f) + 1.0f) / 2.0f);
+
+    if (ds[index] > r) {
         float t = 1.0f - (float) bltr / 16.0f;
         Vec3f result = vec3f_lerp(colors[0], colors[1], vec3fs(t));
         return vec3f_pow(result, vec3fs(1.0f / 2.2f));
@@ -179,7 +183,7 @@ void *generate_tile_thread(void *arg)
 
 // TODO: a runtime parameter to limit the amount of created threads
 // ./wang -j5
-void generate_atlas(void)
+void render_atlas(void)
 {
     pthread_t threads[16] = {0};
 
@@ -231,8 +235,179 @@ void copy_pixels32(RGBA32 *dst, size_t dst_stride,
     }
 }
 
+void generate_grid(void)
+{
+    // +---+---+---+
+    // | m | l | l
+    // +---+---+---+
+    // | t |tl |tl
+    // +---+---+---+
+    // | t |tl |tl
+    // +   +   +   +
+    //
+
+    // First Top Left Corner
+    grid_tl[0] = rand_tile(0, 0);
+
+    // First Top Row
+    for (size_t x = 1; x < GRID_WIDTH_TL; ++x) {
+        // p = bltr == 0b0100 == 1 << 2
+        //
+        //                             bltr
+        // grid[x - 1]               = abcd
+        // grid[x - 1] & 0b0001      = 000d
+        // grid[x - 1] & 0b0001 << 2 = 0d00
+        BLTR lp = 1 << 2;
+        BLTR lv = (grid_tl[x - 1] & 1) << 2;
+        grid_tl[x] = rand_tile(lv, lp);
+    }
+
+    // First Left Column
+    for (size_t y = 1; y < GRID_HEIGHT_TL; ++y) {
+        // p = bltr == 0b0010 == 1 << 1
+        // g = grid[(y - 1) * GRID_WIDTH_TL]
+        //
+        //                     bltr
+        // g                 = abcd
+        // g & 0b1000        = a000
+        // (g & 0b1000) >> 2 = 00a0
+        //
+        // v = (g & 8) >> 2
+
+        BLTR tp = 1 << 1;
+        BLTR tv = (grid_tl[(y - 1) * GRID_WIDTH_TL] & 8) >> 2;
+        grid_tl[y * GRID_WIDTH_TL] = rand_tile(tv, tp);
+    }
+
+    // The Rest of the Tiles
+    for (size_t y = 1; y < GRID_HEIGHT_TL; ++y) {
+        for (size_t x = 1; x < GRID_WIDTH_TL; ++x) {
+            //     +---+
+            //     | t |
+            // +---+---+
+            // | l | g |
+            // +---+---+
+            //
+            BLTR lp = 1 << 2;
+            BLTR lv = (grid_tl[y * GRID_WIDTH_TL + x - 1] & 1) << 2;
+            BLTR tp = 1 << 1;
+            BLTR tv = (grid_tl[(y - 1) * GRID_WIDTH_TL + x] & 8) >> 2;
+            grid_tl[y * GRID_WIDTH_TL + x] = rand_tile(lv | tv, lp | tp);
+        }
+    }
+}
+
+void render_grid(void)
+{
+    for (size_t gy_tl = 0; gy_tl < GRID_HEIGHT_TL; ++gy_tl) {
+        for (size_t gx_tl = 0; gx_tl < GRID_WIDTH_TL; ++gx_tl) {
+            BLTR bltr = grid_tl[gy_tl * GRID_WIDTH_TL + gx_tl];
+            size_t ax_tl = bltr % ATLAS_WIDTH_TL;
+            size_t ay_tl = bltr / ATLAS_WIDTH_TL;
+
+            size_t gx_px = gx_tl * TILE_WIDTH_PX;
+            size_t gy_px = gy_tl * TILE_HEIGHT_PX;
+            size_t ax_px = ax_tl * TILE_WIDTH_PX;
+            size_t ay_px = ay_tl * TILE_HEIGHT_PX;
+
+            copy_pixels32(&grid_px[gy_px * GRID_WIDTH_PX + gx_px], GRID_WIDTH_PX,
+                          &atlas[ay_px * ATLAS_WIDTH_PX + ax_px], ATLAS_WIDTH_PX,
+                          TILE_WIDTH_PX, TILE_HEIGHT_PX);
+        }
+    }
+}
+
+int main(void)
+{
+    generate_grid();
+
+    Display *display = XOpenDisplay(NULL);
+    if (display == NULL) {
+        fprintf(stderr, "ERROR: could not open the default display\n");
+        exit(1);
+    }
+
+    Window window = XCreateSimpleWindow(
+                        display,
+                        XDefaultRootWindow(display),
+                        0, 0,
+                        800, 600,
+                        0,
+                        0,
+                        0);
+
+    XWindowAttributes wa = {0};
+    XGetWindowAttributes(display, window, &wa);
+
+    // TODO: the byte order of the pixels differ between the X11 and our renderer
+    XImage *image = XCreateImage(display,
+                                 wa.visual,
+                                 wa.depth,
+                                 ZPixmap,
+                                 0,
+                                 (char*) grid_px,
+                                 GRID_WIDTH_PX,
+                                 GRID_HEIGHT_PX,
+                                 32,
+                                 GRID_WIDTH_PX * sizeof(RGBA32));
+
+    GC gc = XCreateGC(display, window, 0, NULL);
+
+    Atom wm_delete_window = XInternAtom(display, "WM_DELETE_WINDOW", False);
+    XSetWMProtocols(display, window, &wm_delete_window, 1);
+
+    XSelectInput(display, window, KeyPressMask);
+
+    XMapWindow(display, window);
+
+    XSync(display, False);
+
+    int quit = 0;
+    while (!quit) {
+        while (XPending(display) > 0) {
+            XEvent event = {0};
+            XNextEvent(display, &event);
+            switch (event.type) {
+            case KeyPress: {
+                printf("The key has been pressed! We don't know which one. But some key. Any key.\n");
+            }
+            break;
+
+            case ClientMessage: {
+                if ((Atom) event.xclient.data.l[0] == wm_delete_window) {
+                    printf("WM_DELETE_AND_SAVE_YOURSELF\n");
+                    quit = 1;
+                }
+            }
+            break;
+            }
+        }
+
+        struct timespec now;
+        if (clock_gettime(CLOCK_MONOTONIC, &now) < 0) {
+            fprintf(stderr, "ERROR: could not get current monotonic time: %s\n",
+                    strerror(errno));
+            exit(1);
+        }
+        time_uniform = (float) now.tv_sec + (now.tv_nsec / 1000) * 0.000001;
+
+        render_atlas();
+        render_grid();
+        XPutImage(display, window, gc, image,
+                  0, 0,
+                  0, 0,
+                  GRID_WIDTH_PX,
+                  GRID_HEIGHT_PX);
+        XSync(display, False);
+    }
+
+    XCloseDisplay(display);
+
+    return 0;
+}
+
 // TODO: live rendering with Xlib
-int main()
+int main2(void)
 {
     srand(time(0));
 
@@ -246,7 +421,7 @@ int main()
         {
             begin_clock("ATLAS RENDERING");
             {
-                generate_atlas();
+                render_atlas();
             }
             end_clock();
 
@@ -254,86 +429,14 @@ int main()
             // Grid generation and atlas rendering are completely independant.
             begin_clock("GRID GENERATION");
             {
-                // +---+---+---+
-                // | m | l | l
-                // +---+---+---+
-                // | t |tl |tl
-                // +---+---+---+
-                // | t |tl |tl
-                // +   +   +   +
-                //
-
-                // First Top Left Corner
-                grid_tl[0] = rand_tile(0, 0);
-
-                // First Top Row
-                for (size_t x = 1; x < GRID_WIDTH_TL; ++x) {
-                    // p = bltr == 0b0100 == 1 << 2
-                    //
-                    //                             bltr
-                    // grid[x - 1]               = abcd
-                    // grid[x - 1] & 0b0001      = 000d
-                    // grid[x - 1] & 0b0001 << 2 = 0d00
-                    BLTR lp = 1 << 2;
-                    BLTR lv = (grid_tl[x - 1] & 1) << 2;
-                    grid_tl[x] = rand_tile(lv, lp);
-                }
-
-                // First Left Column
-                for (size_t y = 1; y < GRID_HEIGHT_TL; ++y) {
-                    // p = bltr == 0b0010 == 1 << 1
-                    // g = grid[(y - 1) * GRID_WIDTH_TL]
-                    //
-                    //                     bltr
-                    // g                 = abcd
-                    // g & 0b1000        = a000
-                    // (g & 0b1000) >> 2 = 00a0
-                    //
-                    // v = (g & 8) >> 2
-
-                    BLTR tp = 1 << 1;
-                    BLTR tv = (grid_tl[(y - 1) * GRID_WIDTH_TL] & 8) >> 2;
-                    grid_tl[y * GRID_WIDTH_TL] = rand_tile(tv, tp);
-                }
-
-                // The Rest of the Tiles
-                for (size_t y = 1; y < GRID_HEIGHT_TL; ++y) {
-                    for (size_t x = 1; x < GRID_WIDTH_TL; ++x) {
-                        //     +---+
-                        //     | t |
-                        // +---+---+
-                        // | l | g |
-                        // +---+---+
-                        //
-                        BLTR lp = 1 << 2;
-                        BLTR lv = (grid_tl[y * GRID_WIDTH_TL + x - 1] & 1) << 2;
-                        BLTR tp = 1 << 1;
-                        BLTR tv = (grid_tl[(y - 1) * GRID_WIDTH_TL + x] & 8) >> 2;
-                        grid_tl[y * GRID_WIDTH_TL + x] = rand_tile(lv | tv, lp | tp);
-                    }
-                }
+                generate_grid();
             }
             end_clock();
 
             // TODO: parallelize grid rendering
             begin_clock("GRID RENDERING");
             {
-                for (size_t gy_tl = 0; gy_tl < GRID_HEIGHT_TL; ++gy_tl) {
-                    for (size_t gx_tl = 0; gx_tl < GRID_WIDTH_TL; ++gx_tl) {
-                        BLTR bltr = grid_tl[gy_tl * GRID_WIDTH_TL + gx_tl];
-                        size_t ax_tl = bltr % ATLAS_WIDTH_TL;
-                        size_t ay_tl = bltr / ATLAS_WIDTH_TL;
-
-                        size_t gx_px = gx_tl * TILE_WIDTH_PX;
-                        size_t gy_px = gy_tl * TILE_HEIGHT_PX;
-                        size_t ax_px = ax_tl * TILE_WIDTH_PX;
-                        size_t ay_px = ay_tl * TILE_HEIGHT_PX;
-
-                        copy_pixels32(&grid_px[gy_px * GRID_WIDTH_PX + gx_px], GRID_WIDTH_PX,
-                                      &atlas[ay_px * ATLAS_WIDTH_PX + ax_px], ATLAS_WIDTH_PX,
-                                      TILE_WIDTH_PX, TILE_HEIGHT_PX);
-                    }
-                }
+                render_grid();
             }
             end_clock();
         }
