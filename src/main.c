@@ -17,8 +17,8 @@
 
 // TODO: make <TILE_WIDTH_PX>x<TILE_HEIGHT_PX> and <GRID_WIDTH_TL>x<GRID_HEIGHT_TL> runtime parameters
 
-#define TILE_WIDTH_PX 128
-#define TILE_HEIGHT_PX 128
+#define TILE_WIDTH_PX 64
+#define TILE_HEIGHT_PX 64
 
 #define ATLAS_WIDTH_TL 4
 #define ATLAS_HEIGHT_TL 4
@@ -134,7 +134,7 @@ RGB wang_digits(BLTR bltr, UV uv)
         }
     }
 
-    float r = lerpf(0.0f, 0.5f, (sinf(time_uniform * 1.0f) + 1.0f) / 2.0f);
+    float r = lerpf(0.0f, 0.5f, (sinf(time_uniform * 4.0f) + 1.0f) / 2.0f);
 
     if (ds[index] > r) {
         float t = 1.0f - (float) bltr / 16.0f;
@@ -299,6 +299,7 @@ void generate_grid(void)
 
 void render_grid(void)
 {
+    // TODO: parallelize grid rendering
     for (size_t gy_tl = 0; gy_tl < GRID_HEIGHT_TL; ++gy_tl) {
         for (size_t gx_tl = 0; gx_tl < GRID_WIDTH_TL; ++gx_tl) {
             BLTR bltr = grid_tl[gy_tl * GRID_WIDTH_TL + gx_tl];
@@ -317,7 +318,7 @@ void render_grid(void)
     }
 }
 
-int main(void)
+void live_rendering_with_xlib(void)
 {
     generate_grid();
 
@@ -366,6 +367,7 @@ int main(void)
             XEvent event = {0};
             XNextEvent(display, &event);
             switch (event.type) {
+            // TODO: animation controls in live rendering
             case ClientMessage: {
                 if ((Atom) event.xclient.data.l[0] == wm_delete_window) {
                     quit = 1;
@@ -393,19 +395,10 @@ int main(void)
     }
 
     XCloseDisplay(display);
-
-    return 0;
 }
 
-// TODO: live rendering with Xlib
-int main2(void)
+void offline_rendering_into_png_files(void)
 {
-    srand(time(0));
-
-    printf("Tile Size (px): %dx%d\n", TILE_WIDTH_PX, TILE_HEIGHT_PX);
-    printf("Grid Size (tl): %dx%d\n", GRID_WIDTH_TL, GRID_HEIGHT_TL);
-    printf("Grid Size (px): %dx%d\n", GRID_WIDTH_PX, GRID_HEIGHT_PX);
-
     begin_clock("TOTAL");
     {
         begin_clock("RENDERING");
@@ -424,7 +417,6 @@ int main2(void)
             }
             end_clock();
 
-            // TODO: parallelize grid rendering
             begin_clock("GRID RENDERING");
             {
                 render_grid();
@@ -432,6 +424,8 @@ int main2(void)
             end_clock();
         }
         end_clock();
+
+        // TODO: customize output png file name via CLI params
 
         begin_clock("ATLAS PNG OUTPUT");
         {
@@ -458,6 +452,58 @@ int main2(void)
     end_clock();
 
     dump_summary(stdout);
+}
+
+char *shift_args(int *argc, char ***argv)
+{
+    assert(*argc > 0);
+    char *result = **argv;
+    *argv += 1;
+    *argc -= 1;
+    return result;
+}
+
+void help(const char *program, FILE *stream)
+{
+    fprintf(stream, "Usage: %s [OPTIONS]\n", program);
+    fprintf(stream, "OPTIONS:\n");
+    fprintf(stream, "    -help        Print this help message to stdout and exit with 0 code\n");
+    fprintf(stream, "    -live        Animate and render the Wang Tiles in \"real time\"\n");
+    fprintf(stream, "                 in a separate X11 window\n");
+}
+
+int main(int argc, char **argv)
+{
+    const char *program = shift_args(&argc, &argv);
+
+    int live = 0;
+
+    while (argc > 0) {
+        const char *param = shift_args(&argc, &argv);
+
+        if (strcmp(param, "-live") == 0) {
+            live = 1;
+        } else if (strcmp(param, "-help") == 0) {
+            help(program, stdout);
+            exit(0);
+        } else {
+            help(program, stderr);
+            fprintf(stderr, "ERROR: %s: unknown parameter\n", param);
+            exit(1);
+        }
+    }
+
+    srand(time(0));
+
+    printf("Tile Size (px): %dx%d\n", TILE_WIDTH_PX, TILE_HEIGHT_PX);
+    printf("Grid Size (tl): %dx%d\n", GRID_WIDTH_TL, GRID_HEIGHT_TL);
+    printf("Grid Size (px): %dx%d\n", GRID_WIDTH_PX, GRID_HEIGHT_PX);
+
+    if (live) {
+        live_rendering_with_xlib();
+    } else {
+        offline_rendering_into_png_files();
+    }
 
     return 0;
 }

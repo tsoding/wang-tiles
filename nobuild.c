@@ -1,7 +1,9 @@
 #define NOBUILD_IMPLEMENTATION
 #include "./nobuild.h"
 
-#define CFLAGS /*"-DPROF", */"-O3", "-Wall", "-Wextra", "-Wswitch-enum", "-std=c11", "-pedantic", "-ggdb"
+// TODO: port to Windows
+
+#define CFLAGS "-DPROF", "-O3", "-Wall", "-Wextra", "-Wswitch-enum", "-std=c11", "-pedantic", "-ggdb"
 #define LIBS "-lm", "-lpthread", "-lX11"
 
 const char *cc(void)
@@ -18,6 +20,7 @@ int main(int argc, char **argv)
     // TODO: CI
 
     if (argc > 1) {
+        // TODO: pass command line parameters to wang via `nobuild run`
         if (strcmp(argv[1], "run") == 0) {
             CMD(cc(), CFLAGS, "-o", "wang", "src/main.c", LIBS);
             CMD("./wang");
