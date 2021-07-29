@@ -435,6 +435,7 @@ void offline_rendering_into_png_files(void)
                         strerror(errno));
                 exit(1);
             }
+            printf("Atlas saved to %s\n", output_file_path);
         }
         end_clock();
 
@@ -446,11 +447,13 @@ void offline_rendering_into_png_files(void)
                         strerror(errno));
                 exit(1);
             }
+            printf("Grid saved to %s\n", output_file_path);
         }
         end_clock();
     }
     end_clock();
 
+    printf("Performance Summary:\n");
     dump_summary(stdout);
 }
 
