@@ -22,6 +22,15 @@ size_t clock_stack_count = 0;
 Entry summary[SUMMARY_CAP];
 size_t summary_count = 0;
 
+// TODO: Profiler: several passes over the same path and compute the average elapsed time
+// It would be interesting to explore how to do that. If you do several passes over the
+// same path without cleaning the summary you will just pile more entries to the summary.
+// We need a way to "rewind" the summary_count so the pass hits the same entries again and
+// computes the average time on their elapsed values.
+//
+// This would be also super useful when we integrate our renderer with a display window. This
+// will enable us to display the average renderer performance in real time.
+
 void begin_clock(const char *label)
 {
     assert(clock_stack_count < CLOCK_STACK_CAP);
