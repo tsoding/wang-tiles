@@ -43,23 +43,6 @@ RGBA32 make_rgba32(float r, float g, float b)
            0xFF000000;
 }
 
-RGB stripes(UV uv)
-{
-    float n = 20.0f;
-    Vec3f v = vec3f(sinf(uv.c[U] * n),
-                    sinf((uv.c[U] + uv.c[V]) * n),
-                    cosf(uv.c[V] * n));
-    return vec3f_mul(vec3f_sum(v, vec3fs(1.0f)),
-                     vec3fs(0.5f));
-}
-
-RGB japan(UV uv)
-{
-    float r = 0.25;
-    int a = vec2f_sqrlen(vec2f_sub(vec2fs(0.5f), uv)) > r * r;
-    return vec3f(1.0f, (float) a, (float) a);
-}
-
 // TODO: colors as runtime parameters
 static const RGB colors[] = {
     // {{1.0f, 0.0f, 0.0f}}, // 0
