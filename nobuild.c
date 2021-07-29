@@ -29,10 +29,16 @@ int main(int argc, char **argv)
     // - [ ] -shader <blobs|digits>
 
     if (argc > 1) {
-        // TODO: pass command line parameters to wang via `nobuild run`
         if (strcmp(argv[1], "run") == 0) {
             CMD(cc(), CFLAGS, "-o", "wang", "src/main.c", LIBS);
-            CMD("./wang");
+
+            Cstr_Array line = cstr_array_make("./wang", NULL);
+            for (int i = 2; i < argc; ++i) {
+                line = cstr_array_append(line, argv[i]);
+            }
+            Cmd cmd = {.line = line};
+            INFO("CMD: %s", cmd_show(cmd));
+            cmd_run_sync(cmd);
         } else if (strcmp(argv[1], "gdb") == 0) {
             CMD(cc(), CFLAGS, "-o", "wang", "src/main.c", LIBS);
             CMD("gdb", "./wang");
