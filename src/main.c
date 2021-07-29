@@ -356,11 +356,9 @@ int main(void)
     Atom wm_delete_window = XInternAtom(display, "WM_DELETE_WINDOW", False);
     XSetWMProtocols(display, window, &wm_delete_window, 1);
 
-    XSelectInput(display, window, KeyPressMask);
+    XSelectInput(display, window, 0);
 
     XMapWindow(display, window);
-
-    XSync(display, False);
 
     int quit = 0;
     while (!quit) {
@@ -368,14 +366,8 @@ int main(void)
             XEvent event = {0};
             XNextEvent(display, &event);
             switch (event.type) {
-            case KeyPress: {
-                printf("The key has been pressed! We don't know which one. But some key. Any key.\n");
-            }
-            break;
-
             case ClientMessage: {
                 if ((Atom) event.xclient.data.l[0] == wm_delete_window) {
-                    printf("WM_DELETE_AND_SAVE_YOURSELF\n");
                     quit = 1;
                 }
             }
@@ -398,7 +390,6 @@ int main(void)
                   0, 0,
                   GRID_WIDTH_PX,
                   GRID_HEIGHT_PX);
-        XSync(display, False);
     }
 
     XCloseDisplay(display);
