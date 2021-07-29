@@ -29,7 +29,6 @@ int main(int argc, char **argv)
     // - [ ] -atlas-png-path <path/to/atlas.png>
     // - [ ] -grid-png-path <path/to/grid.png>
     // - [ ] -shader <blobs|digits>
-    // TODO: CI
 
     if (argc > 1) {
         // TODO: pass command line parameters to wang via `nobuild run`
