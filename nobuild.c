@@ -2,6 +2,12 @@
 #include "./nobuild.h"
 
 // TODO: port to Windows
+// Should use WinAPI instead of pthread and X11
+// Maybe we should first factor out the platform layer
+// so it's easier to add more platforms.
+
+// TODO: port to MacOS
+// I have no idea what MacOS uses for threading and simple graphics
 
 #define CFLAGS "-DPROF", "-O3", "-Wall", "-Wextra", "-Wswitch-enum", "-std=c11", "-pedantic", "-ggdb"
 #define LIBS "-lm", "-lpthread", "-lX11"
@@ -17,6 +23,12 @@ int main(int argc, char **argv)
     GO_REBUILD_URSELF(argc, argv);
 
     // TODO: nobuild subcommand to regenerate ./imgs/*
+    // Requires CLI params
+    // - [ ] -tile <width>x<height>
+    // - [ ] -grid <width>x<height>
+    // - [ ] -atlas-png-path <path/to/atlas.png>
+    // - [ ] -grid-png-path <path/to/grid.png>
+    // - [ ] -shader <blobs|digits>
     // TODO: CI
 
     if (argc > 1) {
