@@ -385,6 +385,7 @@ void live_rendering_with_xlib(void)
         }
         time_uniform = (float) now.tv_sec + (now.tv_nsec / 1000) * 0.000001;
 
+        // TODO: live rendering animation that transitions between different grids
         render_atlas();
         render_grid();
         XPutImage(display, window, gc, image,
