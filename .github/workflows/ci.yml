@@ -1,0 +1,27 @@
+name: CI
+on:
+  pull_request:
+  push:
+    branches: [ master ]
+
+jobs:
+  build-linux-gcc:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v1
+      - name: build
+        run: |
+          cc -o nobuild nobuild.c
+          ./nobuild run
+        env:
+          CC: gcc
+  build-linux-clang:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v1
+      - name: build ded
+        run: |
+          cc -o nobuild nobuild.c
+          ./nobuild run
+        env:
+          CC: clang
