@@ -1,4 +1,4 @@
-// TODO: document how to use the profiler module
+// TODO: document how to use the profiler module @doc
 #include <assert.h>
 #include <time.h>
 #include <stddef.h>

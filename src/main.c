@@ -16,7 +16,7 @@
 #include "./la.c"
 #include "./prof.c"
 
-// TODO: make <TILE_WIDTH_PX>x<TILE_HEIGHT_PX> and <GRID_WIDTH_TL>x<GRID_HEIGHT_TL> runtime parameters
+// TODO: make <TILE_WIDTH_PX>x<TILE_HEIGHT_PX> and <GRID_WIDTH_TL>x<GRID_HEIGHT_TL> runtime parameters @cli
 
 #define TILE_WIDTH_PX 64
 #define TILE_HEIGHT_PX 64
@@ -44,7 +44,7 @@ RGBA32 make_rgba32(float r, float g, float b)
            0xFF000000;
 }
 
-// TODO: colors as runtime parameters
+// TODO: colors as runtime parameters @cli
 static const RGB colors[] = {
     // {{1.0f, 0.0f, 0.0f}}, // 0
     // {{0.0f, 1.0f, 1.0f}}, // 1
@@ -85,21 +85,21 @@ RGB wang_blobs(BLTR bltr, UV uv)
 {
     float r = lerpf(0.0f, 1.0f, (sinf(time_uniform * 2.0f) + 1.0f) / 2.0f);
 
-    static const Vec2f sides[4] = {
+    static const V2f sides[4] = {
         {{1.0, 0.5}}, // r
         {{0.5, 0.0}}, // t
         {{0.0, 0.5}}, // l
         {{0.5, 1.0}}, // b
     };
 
-    RGB result = vec3fs(0.0f);
+    RGB result = v3fs(0.0f);
     for (size_t i = 0; i < 4; ++i) {
-        Vec2f p = sides[i];
-        float t = 1.0f - fminf(vec2f_len(vec2f_sub(p, uv)) / r, 1.0f);
-        result = vec3f_lerp(result, colors[bltr & 1], vec3fs(t));
+        V2f p = sides[i];
+        float t = 1.0f - fminf(v2f_len(v2f_sub(p, uv)) / r, 1.0f);
+        result = v3f_lerp(result, colors[bltr & 1], v3fs(t));
         bltr = bltr >> 1;
     }
-    return vec3f_pow(result, vec3fs(1.0f / 2.2f));
+    return v3f_pow(result, v3fs(1.0f / 2.2f));
 }
 
 RGB wang_digits(BLTR bltr, UV uv)
@@ -122,8 +122,8 @@ RGB wang_digits(BLTR bltr, UV uv)
 
     if (ds[index] > r) {
         float t = 1.0f - (float) bltr / 16.0f;
-        Vec3f result = vec3f_lerp(colors[0], colors[1], vec3fs(t));
-        return vec3f_pow(result, vec3fs(1.0f / 2.2f));
+        V3f result = v3f_lerp(colors[0], colors[1], v3fs(t));
+        return v3f_pow(result, v3fs(1.0f / 2.2f));
     }
 
     while (index-- > 0) {
@@ -140,7 +140,7 @@ void generate_tile32(uint32_t *pixels, size_t width, size_t height, size_t strid
         for (size_t x = 0; x < width; ++x) {
             float u = (float) x / (float) width;
             float v = (float) y / (float) height;
-            RGB p = shader(bltr, vec2f(u, v));
+            RGB p = shader(bltr, v2f(u, v));
             pixels[y * stride + x] = make_rgba32(p.c[R], p.c[G], p.c[B]);
         }
     }
@@ -156,7 +156,7 @@ void *generate_tile_thread(void *arg)
     size_t y = (bltr / ATLAS_WIDTH_TL) * TILE_WIDTH_PX;
     size_t x = (bltr % ATLAS_WIDTH_TL) * TILE_WIDTH_PX;
 
-    // TODO: the tile shader as the runtime parameter
+    // TODO: the tile shader as the runtime parameter @cli
     generate_tile32(
         &atlas[y * ATLAS_WIDTH_PX + x],
         TILE_WIDTH_PX, TILE_HEIGHT_PX, ATLAS_WIDTH_PX,
@@ -165,7 +165,7 @@ void *generate_tile_thread(void *arg)
     return NULL;
 }
 
-// TODO: a runtime parameter to limit the amount of created threads
+// TODO: a runtime parameter to limit the amount of created threads @cli
 // ./wang -j5
 void render_atlas(void)
 {
@@ -376,7 +376,7 @@ void live_rendering_with_xlib(void)
         }
         time_uniform = (float) now.tv_sec + (now.tv_nsec / 1000) * 0.000001;
 
-        // TODO: live rendering animation that transitions between different grids
+        // TODO: live rendering animation that transitions between different grids @stream
         render_atlas();
         render_grid();
         XPutImage(display, window, gc, image,
@@ -494,7 +494,7 @@ int main(int argc, char **argv)
     const char *atlas_png_path = "atlas.png";
     const char *grid_png_path = "grid.png";
 
-    // TODO: implement Go flag-like module for parsing parameters
+    // TODO: implement Go flag-like module for parsing parameters @stream
     while (argc > 0) {
         const char *param = shift_args(&argc, &argv);
 
