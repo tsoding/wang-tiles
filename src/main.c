@@ -2,6 +2,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <stdarg.h>
 #include <string.h>
 #include <errno.h>
 #include <time.h>
@@ -464,6 +465,27 @@ void help(const char *program, FILE *stream)
     fprintf(stream, "    -grid-png <grid.png>      Path to the output grid.png file (default: \"grid.png\")\n");
 }
 
+#if defined(__GNUC__) || defined(__clang__)
+// https://gcc.gnu.org/onlinedocs/gcc-4.7.2/gcc/Function-Attributes.html
+#define WANG_PRINTF_FORMAT(STRING_INDEX, FIRST_TO_CHECK) __attribute__ ((format (printf, STRING_INDEX, FIRST_TO_CHECK)))
+#else
+#define WANG_PRINTF_FORMAT(STRING_INDEX, FIRST_TO_CHECK)
+#endif
+
+WANG_PRINTF_FORMAT(3, 4) void param_fail(const char *program, const char *param, const char *fmt, ...)
+{
+    help(program, stderr);
+    fprintf(stderr, "ERROR: %s: ", param);
+
+    va_list args;
+    va_start(args, fmt);
+    vfprintf(stderr, fmt, args);
+    fprintf(stderr, "\n");
+    va_end(args);
+
+    exit(1);
+}
+
 int main(int argc, char **argv)
 {
     const char *program = shift_args(&argc, &argv);
@@ -483,22 +505,16 @@ int main(int argc, char **argv)
             exit(0);
         } else if (strcmp(param, "-atlas-png") == 0) {
             if (argc <= 0) {
-                help(program, stderr);
-                fprintf(stderr, "ERROR: %s: no argument is provided", param);
-                exit(1);
+                param_fail(program, param, "no argument is provided");
             }
             atlas_png_path = shift_args(&argc, &argv);
         } else if (strcmp(param, "-grid-png") == 0) {
             if (argc <= 0) {
-                help(program, stderr);
-                fprintf(stderr, "ERROR: %s: no argument is provided", param);
-                exit(1);
+                param_fail(program, param, "no argument is provided");
             }
             grid_png_path = shift_args(&argc, &argv);
         } else {
-            help(program, stderr);
-            fprintf(stderr, "ERROR: %s: unknown parameter\n", param);
-            exit(1);
+            param_fail(program, param, "unknown parameter");
         }
     }
 
