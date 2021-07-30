@@ -1,4 +1,4 @@
-// TODO: document how to use the Linear Algebra module
+// TODO: document how to use the Linear Algebra module @doc
 #include <stdlib.h>
 #include <math.h>
 

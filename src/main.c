@@ -16,7 +16,7 @@
 #include "./la.c"
 #include "./prof.c"
 
-// TODO: make <TILE_WIDTH_PX>x<TILE_HEIGHT_PX> and <GRID_WIDTH_TL>x<GRID_HEIGHT_TL> runtime parameters
+// TODO: make <TILE_WIDTH_PX>x<TILE_HEIGHT_PX> and <GRID_WIDTH_TL>x<GRID_HEIGHT_TL> runtime parameters @cli
 
 #define TILE_WIDTH_PX 64
 #define TILE_HEIGHT_PX 64
@@ -44,7 +44,7 @@ RGBA32 make_rgba32(float r, float g, float b)
            0xFF000000;
 }
 
-// TODO: colors as runtime parameters
+// TODO: colors as runtime parameters @cli
 static const RGB colors[] = {
     // {{1.0f, 0.0f, 0.0f}}, // 0
     // {{0.0f, 1.0f, 1.0f}}, // 1
@@ -156,7 +156,7 @@ void *generate_tile_thread(void *arg)
     size_t y = (bltr / ATLAS_WIDTH_TL) * TILE_WIDTH_PX;
     size_t x = (bltr % ATLAS_WIDTH_TL) * TILE_WIDTH_PX;
 
-    // TODO: the tile shader as the runtime parameter
+    // TODO: the tile shader as the runtime parameter @cli
     generate_tile32(
         &atlas[y * ATLAS_WIDTH_PX + x],
         TILE_WIDTH_PX, TILE_HEIGHT_PX, ATLAS_WIDTH_PX,
@@ -165,7 +165,7 @@ void *generate_tile_thread(void *arg)
     return NULL;
 }
 
-// TODO: a runtime parameter to limit the amount of created threads
+// TODO: a runtime parameter to limit the amount of created threads @cli
 // ./wang -j5
 void render_atlas(void)
 {
@@ -376,7 +376,7 @@ void live_rendering_with_xlib(void)
         }
         time_uniform = (float) now.tv_sec + (now.tv_nsec / 1000) * 0.000001;
 
-        // TODO: live rendering animation that transitions between different grids
+        // TODO: live rendering animation that transitions between different grids @stream
         render_atlas();
         render_grid();
         XPutImage(display, window, gc, image,
@@ -494,7 +494,7 @@ int main(int argc, char **argv)
     const char *atlas_png_path = "atlas.png";
     const char *grid_png_path = "grid.png";
 
-    // TODO: implement Go flag-like module for parsing parameters
+    // TODO: implement Go flag-like module for parsing parameters @stream
     while (argc > 0) {
         const char *param = shift_args(&argc, &argv);
 
