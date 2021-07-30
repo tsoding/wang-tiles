@@ -9,7 +9,7 @@
 // TODO: port to MacOS
 // I have no idea what MacOS uses for threading and simple graphics
 
-#define CFLAGS "-DPROF", "-O3", "-Wall", "-Wextra", "-Wswitch-enum", "-std=c11", "-pedantic", "-ggdb"
+#define CFLAGS "-DPROF", "-O0", "-Wall", "-Wextra", "-Wswitch-enum", "-std=c11", "-pedantic", "-ggdb"
 #define LIBS "-lm", "-lpthread", "-lX11"
 
 const char *cc(void)
