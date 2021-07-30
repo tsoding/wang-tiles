@@ -1,7 +1,81 @@
-// TODO: document how to use the Linear Algebra module @doc
+// Linear Algebra (LA) Module
+//
+//   Right now we support only 2, 3 and 4 dimensional floating point vectors.
+//
+// Type Naming Conventions
+//
+//   Types always start with a capital letter. 
+//   The name of the type has the following format:
+//     [object][size][component type]
+//   where
+//     [object] is a letter that denotes the LA object. Since we only support
+//       vectors at the moment, it is always "V". But in the future we plan
+//       to add "M" for "matrix"
+//     [size] is the size of the object
+//       For vectors it's usually 2, 3 or 4 denoting the amount of the components.
+//     [component type] is a letter that denotes the type of the component of the object.
+//       f - float
+//       d - double
+//       i - int
+//   examples:
+//       V2f, V3d, V4i, etc
+//
+// Function Naming Conventions
+//   Each function name has the following format:
+//     [type prefix]_[operation]
+//                  ↑
+//                  underscore symbol
+//   where
+//     [type prefix] is the name of the type of the object the function operates on.
+//       The name follows the same naming conventions as described by 
+//       "Type Naming Conventions" except the first letter is always small.
+//     [operation] is the name of the operation.
+//   examples:
+//     V2f v2f_sum(V2f a, V2f b);
+//     V3i v3i_sub(V3i a, V3i b);
+//     etc.
+//
+// Vector Constructors
+//
+//   There are two types of vector constructors:
+//   1. Just a regular one that is basically `[type prefix]` without `_[operation]`.
+//      It accepts `[size]` arguments and constructs the corresponding vector. 
+//      Examples: 
+//        Vec2f vec2f(float x, float y);
+//        Vec3f vec3f(float x, float y, float z);
+//        Vec4f vec4f(float x, float y, float z, float w);
+//   2. The Scalar Constructor. It has the name of `[type prefix]s` (with "s" at the end).
+//      It accepts always 1 argument and initializes all the components of the vector
+//      with that argument.
+//      Examples:
+//        Vec2f vec2fs(float s);
+//        Vec3f vec3fs(float s);
+//        Vec4f vec4fs(float s);
+//
+// Interoperation between Vectors and Scalars 
+//   
+//   Imagine that you have the following vector:
+//
+//     V2f v = v2f(69.0f, 420.0f);
+//
+//   and you want to scale it by 2.0f. You do it like this
+//
+//     v = v2f_mul(v, v2fs(2.0f));
+//
+//   v2f_mul() performs componentswise multiplication
+//   v2fs() turns a scalar into a vector
+//   the whole expression multiplies each component of v by 2.0f
+//
+//   This approach enables commutativity of the scalar operations without
+//   introducing unnecessary functions:
+//
+//      v2f_mul(v, v2fs(2.0f)) == v2f_mul(v2fs(2.0f), v)
+//
 #include <stdlib.h>
 #include <math.h>
 
+// This one is kinda out of place, but this is because math.h 
+// does not really provide any lerp operation.
 float lerpf(float a, float b, float t)
 {
     return a + (b - a) * t;
