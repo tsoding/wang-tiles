@@ -139,6 +139,9 @@ void dump_summary(FILE *stream)
 {
     size_t line_width = estimate_line_width();
     render_summary(stream, line_width + 2);
+
+    clock_stack_count = 0;
+    summary_count = 0;
 }
 
 #else
