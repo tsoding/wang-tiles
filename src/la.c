@@ -1,3 +1,4 @@
+// TODO: document how to use the Linear Algebra module
 #include <stdlib.h>
 #include <math.h>
 

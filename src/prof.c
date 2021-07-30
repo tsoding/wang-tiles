@@ -1,3 +1,4 @@
+// TODO: document how to use the profiler module
 #include <assert.h>
 #include <time.h>
 #include <stddef.h>
