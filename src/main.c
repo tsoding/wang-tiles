@@ -146,6 +146,7 @@ void generate_tile32(uint32_t *pixels, size_t width, size_t height, size_t strid
     }
 }
 
+// TODO: allocate rendere memory dynamically @stream
 RGBA32 atlas[ATLAS_WIDTH_PX * ATLAS_HEIGHT_PX];
 BLTR grid_tl[GRID_WIDTH_TL * GRID_HEIGHT_TL];
 RGBA32 grid_px[GRID_WIDTH_PX * GRID_HEIGHT_PX];
