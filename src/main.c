@@ -203,7 +203,7 @@ void renderer_realloc(Renderer *r,
     r->grid_width_tl = grid_width_tl;
     r->grid_height_tl = grid_height_tl;
     size_t grid_tl_size_bytes = r->grid_width_tl * r->grid_height_tl * sizeof(BLTR);
-    static_assert(sizeof(RGBA32) == sizeof(BLTR), "The renderer memory management model expects RGBA32 and BLTR to be of the same size");
+    static_assert(sizeof(RGBA32) == sizeof(BLTR), "The renderer memory management model expects RGBA32 and BLTR to have the same size");
 
     r->grid_width_px = r->grid_width_tl * r->tile_width_px;
     r->grid_height_px = r->grid_height_tl * r->tile_height_px;
@@ -221,7 +221,7 @@ void renderer_realloc(Renderer *r,
 
     r->memory = malloc(r->memory_size);
     if (r->memory == NULL) {
-        fprintf(stderr, "ERROR: could not allocate the memory for the renderer\n");
+        fprintf(stderr, "ERROR: could not allocate the memory for the renderer: %s\n", strerror(errno));
         exit(1);
     }
 
