@@ -220,6 +220,10 @@ void renderer_realloc(Renderer *r,
     }
 
     // TODO: make sure the memory alignment is right @cleanup
+    // malloc(), according to the docs, already returns the memory that is 
+    // "suitably aligned for any built-in type".
+    // I think the only thing we need to check if the regions sizes are divisible by 8
+    // so their starts don't end up on the boundry of a word. If they are not we should pad them.
     r->memory = malloc(r->memory_size);
     if (r->memory == NULL) {
         fprintf(stderr, "ERROR: could not allocate the memory for the renderer: %s\n", strerror(errno));
