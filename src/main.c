@@ -31,6 +31,8 @@ static_assert(ATLAS_WIDTH_TL * ATLAS_HEIGHT_TL == 16, "The amout of tiles in the
 #define MAX_GRID_WIDTH_TL (32 * 1024)
 #define MAX_GRID_HEIGHT_TL (32 * 1024)
 
+#define POTATO_SIZE (2 * 1000 * 1000 * 1000)
+
 typedef uint32_t BLTR;
 typedef RGB (*Frag_Shader)(BLTR bltr, UV uv);
 typedef uint32_t RGBA32;
@@ -177,6 +179,7 @@ void renderer_free(Renderer *r)
 }
 
 void renderer_realloc(Renderer *r,
+                      int not_potato,
                       size_t tile_width_px, size_t tile_height_px,
                       size_t grid_width_tl, size_t grid_height_tl)
 {
@@ -219,6 +222,15 @@ void renderer_realloc(Renderer *r,
     size_t grid_px_size_bytes = r->grid_width_px * r->grid_height_px * sizeof(RGBA32);
 
     r->memory_size = atlas_size_bytes + grid_tl_size_bytes + grid_px_size_bytes;
+    if (!not_potato && r->memory_size >= POTATO_SIZE) {
+        fprintf(stderr, "ERROR: you are trying to allocate more than %d bytes of memory.\n", POTATO_SIZE);
+        fprintf(stderr, "  The laptop of the original author of this software is a potato\n");
+        fprintf(stderr, "  and can't handle such big allocations without killing their entire system.\n");
+        fprintf(stderr, "\n");
+        fprintf(stderr, "  Please confirm that your machine is not a potato by providing -not-potato flag.\n");
+        exit(1);
+    }
+
     r->memory = malloc(r->memory_size);
     if (r->memory == NULL) {
         fprintf(stderr, "ERROR: could not allocate the memory for the renderer\n");
@@ -560,6 +572,8 @@ void help(const char *program, FILE *stream)
     fprintf(stream, "        Path to the output grid.png file. Default: \"grid.png\"\n");
     fprintf(stream, "    -no-png\n");
     fprintf(stream, "        Don't output any png files in the offline mode. Just test the performance of the renderer\n");
+    fprintf(stream, "    -not-potato\n");
+    fprintf(stream, "        Confirm that your machine is not a potato\n");
     fprintf(stream, "    -tw <width>\n");
     fprintf(stream, "        The width of the tile in PIXELS. Default: %d. Maximum: %d.\n", DEFAULT_TILE_WIDTH_PX, MAX_TILE_WIDTH_PX);
     fprintf(stream, "    -th <height>\n");
@@ -626,6 +640,7 @@ int main(int argc, char **argv)
 
     int live = 0;
     int no_png = 0;
+    int not_potato = 0;
     const char *atlas_png_path = "atlas.png";
     const char *grid_png_path = "grid.png";
 
@@ -655,6 +670,8 @@ int main(int argc, char **argv)
             grid_png_path = shift_args(&argc, &argv);
         } else if (strcmp(param, "-no-png") == 0) {
             no_png = 1;
+        } else if (strcmp(param, "-not-potato") == 0) {
+            not_potato = 1;
         } else if (strcmp(param, "-tw") == 0) {
             if (argc <= 0) {
                 param_fail(program, param, "no argument is provided");
@@ -684,7 +701,7 @@ int main(int argc, char **argv)
         }
     }
 
-    renderer_realloc(r, tile_width_px, tile_height_px, grid_width_tl, grid_height_tl);
+    renderer_realloc(r, not_potato, tile_width_px, tile_height_px, grid_width_tl, grid_height_tl);
 
     printf("Tile Size (px):      %zux%zu\n", r->tile_width_px, r->tile_height_px);
     printf("Grid Size (tl):      %zux%zu\n", r->grid_width_tl, r->grid_height_tl);
