@@ -34,7 +34,7 @@ static_assert(ATLAS_WIDTH_TL * ATLAS_HEIGHT_TL == 16, "The amout of tiles in the
 #define POTATO_SIZE (2 * 1000 * 1000 * 1000)
 
 typedef uint32_t BLTR;
-typedef RGB (*Frag_Shader)(BLTR bltr, UV uv);
+typedef RGB (*Frag_Shader)(float time_uniform, BLTR bltr, UV uv);
 typedef uint32_t RGBA32;
 
 RGBA32 make_rgba32(float r, float g, float b)
@@ -63,7 +63,6 @@ static const RGB colors[] = {
     {{1.0f, 1.0f, 1.0f}}, // 1
 };
 static_assert(sizeof(colors) / sizeof(colors[0]) == 2, "colors array must have exactly 2 elements");
-float time_uniform = 0.0f;
 
 // TODO: more wang tile ideas:
 // - Metaballs: https://en.wikipedia.org/wiki/Metaballs
@@ -82,7 +81,7 @@ float time_uniform = 0.0f;
 //   1111 = 15
 //
 // TODO: try to speed up the shader with SIMD instructions
-RGB wang_blobs(BLTR bltr, UV uv)
+RGB wang_blobs(float time_uniform, BLTR bltr, UV uv)
 {
     float r = lerpf(0.0f, 1.0f, (sinf(time_uniform * 2.0f) + 1.0f) / 2.0f);
 
@@ -103,7 +102,7 @@ RGB wang_blobs(BLTR bltr, UV uv)
     return v3f_pow(result, v3fs(1.0f / 2.2f));
 }
 
-RGB wang_digits(BLTR bltr, UV uv)
+RGB wang_digits(float time_uniform, BLTR bltr, UV uv)
 {
     float ds[4] = {
         1.0f - uv.c[X], // r
@@ -134,19 +133,6 @@ RGB wang_digits(BLTR bltr, UV uv)
     return colors[bltr & 1];
 }
 
-void generate_tile32(uint32_t *pixels, size_t width, size_t height, size_t stride,
-                     BLTR bltr, Frag_Shader shader)
-{
-    for (size_t y = 0; y < height; ++y) {
-        for (size_t x = 0; x < width; ++x) {
-            float u = (float) x / (float) width;
-            float v = (float) y / (float) height;
-            RGB p = shader(bltr, v2f(u, v));
-            pixels[y * stride + x] = make_rgba32(p.c[R], p.c[G], p.c[B]);
-        }
-    }
-}
-
 typedef struct {
     void *memory;               // the beginning of the renderer memory
     size_t memory_size;         // the size of the whole renderer memory
@@ -165,6 +151,8 @@ typedef struct {
     RGBA32 *grid_px;            // must be within the memory region defined by `memory` and `memory_size`
     size_t grid_width_px;       // must be equal to (grid_width_tl * tile_width_px)
     size_t grid_height_px;      // must be equal to (grid_height_tl * tile_height_px)
+
+    float time_uniform;         // current time in seconds, used for animation in shaders
 } Renderer;
 
 // TODO: pull the renderer out of the global scope
@@ -240,6 +228,20 @@ void renderer_realloc(Renderer *r,
     r->atlas   = r->memory;
     r->grid_tl = (BLTR*) ((char*) r->memory + atlas_size_bytes);
     r->grid_px = (RGBA32*) ((char*) r->memory + atlas_size_bytes + grid_tl_size_bytes);
+}
+
+void generate_tile32(uint32_t *pixels, size_t width, size_t height, size_t stride,
+                     BLTR bltr, Frag_Shader shader)
+{
+    Renderer *r = &renderer;
+    for (size_t y = 0; y < height; ++y) {
+        for (size_t x = 0; x < width; ++x) {
+            float u = (float) x / (float) width;
+            float v = (float) y / (float) height;
+            RGB p = shader(r->time_uniform, bltr, v2f(u, v));
+            pixels[y * stride + x] = make_rgba32(p.c[R], p.c[G], p.c[B]);
+        }
+    }
 }
 
 void *generate_tile_thread(void *arg)
@@ -474,7 +476,7 @@ void live_rendering_with_xlib(void)
                     strerror(errno));
             exit(1);
         }
-        time_uniform = (float) now.tv_sec + (now.tv_nsec / 1000) * 0.000001;
+        r->time_uniform = (float) now.tv_sec + (now.tv_nsec / 1000) * 0.000001;
 
         // TODO: live rendering animation that transitions between different grids @stream
         render_atlas();
