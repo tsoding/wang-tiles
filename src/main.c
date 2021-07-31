@@ -459,11 +459,15 @@ void help(const char *program, FILE *stream)
 {
     fprintf(stream, "Usage: %s [OPTIONS]\n", program);
     fprintf(stream, "OPTIONS:\n");
-    fprintf(stream, "    -help                     Print this help message to stdout and exit with 0 code\n");
-    fprintf(stream, "    -live                     Animate and render the Wang Tiles in \"real time\"\n");
-    fprintf(stream, "                              in a separate X11 window\n");
-    fprintf(stream, "    -atlas-png <atlas.png>    Path to the output atlas.png file (default: \"atlas.png\")\n");
-    fprintf(stream, "    -grid-png <grid.png>      Path to the output grid.png file (default: \"grid.png\")\n");
+    fprintf(stream, "    -help\n");
+    fprintf(stream, "        Print this help message to stdout and exit with 0 code\n");
+    fprintf(stream, "    -live\n");
+    fprintf(stream, "        Animate and render the Wang Tiles in \"real time\"\n");
+    fprintf(stream, "        in a separate X11 window\n");
+    fprintf(stream, "    -atlas-png <atlas.png>\n");
+    fprintf(stream, "        Path to the output atlas.png file (default: \"atlas.png\")\n");
+    fprintf(stream, "    -grid-png <grid.png>\n");
+    fprintf(stream, "        Path to the output grid.png file (default: \"grid.png\")\n");
 }
 
 #if defined(__GNUC__) || defined(__clang__)
