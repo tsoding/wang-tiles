@@ -618,6 +618,8 @@ size_t param_size(const char *program, const char *param, const char *arg_cstr,
 
 int main(int argc, char **argv)
 {
+    srand(time(0));
+
     const char *program = shift_args(&argc, &argv);
 
     int live = 0;
@@ -628,11 +630,6 @@ int main(int argc, char **argv)
     size_t tile_height_px = DEFAULT_TILE_HEIGHT_PX;
     size_t grid_width_tl = DEFAULT_GRID_WIDTH_TL;
     size_t grid_height_tl = DEFAULT_GRID_HEIGHT_TL;
-
-    Renderer r = {0};
-    renderer_realloc(&r,
-                     tile_width_px, tile_height_px,
-                     grid_width_tl, grid_height_tl);
 
     // TODO: implement Go flag-like module for parsing parameters @stream
     while (argc > 0) {
@@ -682,11 +679,13 @@ int main(int argc, char **argv)
         }
     }
 
-    srand(time(0));
+    Renderer r = {0};
+    renderer_realloc(&r, tile_width_px, tile_height_px, grid_width_tl, grid_height_tl);
 
-    printf("Tile Size (px): %dx%d\n", TILE_WIDTH_PX, TILE_HEIGHT_PX);
-    printf("Grid Size (tl): %dx%d\n", GRID_WIDTH_TL, GRID_HEIGHT_TL);
-    printf("Grid Size (px): %dx%d\n", GRID_WIDTH_PX, GRID_HEIGHT_PX);
+    printf("Tile Size (px):      %zux%zu\n", r.tile_width_px, r.tile_height_px);
+    printf("Grid Size (tl):      %zux%zu\n", r.grid_width_tl, r.grid_height_tl);
+    printf("Grid Size (px):      %zux%zu\n", r.grid_width_px, r.grid_height_px);
+    printf("Memory Size (bytes): %zu\n", r.memory_size);
 
     if (live) {
         live_rendering_with_xlib();
