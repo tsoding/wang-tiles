@@ -186,10 +186,10 @@ void renderer_realloc(Renderer *r,
     //
     // Remove the static_asserts below to confirm that you know what
     // you are doing. :)
-    static_assert(MAX_TILE_WIDTH_PX == 1024 * 32, "unexpected MAX_TILE_WIDTH_PX");
-    static_assert(MAX_TILE_HEIGHT_PX == 1024 * 32, "unexpected MAX_TILE_HEIGHT_PX");
-    static_assert(MAX_GRID_WIDTH_TL == 1024 * 32, "unexpected MAX_GRID_WIDTH_TL");
-    static_assert(MAX_GRID_HEIGHT_TL == 1024 * 32, "unexpected MAX_GRID_HEIGHT_TL");
+    static_assert(MAX_TILE_WIDTH_PX <= 1024 * 32, "MAX_TILE_WIDTH_PX is too big");
+    static_assert(MAX_TILE_HEIGHT_PX <= 1024 * 32, "MAX_TILE_HEIGHT_PX is too big");
+    static_assert(MAX_GRID_WIDTH_TL <= 1024 * 32, "MAX_GRID_WIDTH_TL is too big");
+    static_assert(MAX_GRID_HEIGHT_TL <= 1024 * 32, "MAX_GRID_HEIGHT_TL is too big");
 
     renderer_free(r);
 
