@@ -577,13 +577,13 @@ void help(const char *program, FILE *stream)
     fprintf(stream, "    -not-potato\n");
     fprintf(stream, "        Confirm that your machine is not a potato\n");
     fprintf(stream, "    -tw <width>\n");
-    fprintf(stream, "        The width of the tile in PIXELS. Default: %d. Maximum: %d.\n", DEFAULT_TILE_WIDTH_PX, MAX_TILE_WIDTH_PX);
+    fprintf(stream, "        The width of the tile in PIXELS. Default: %d. Minimum: 1. Maximum: %d.\n", DEFAULT_TILE_WIDTH_PX, MAX_TILE_WIDTH_PX);
     fprintf(stream, "    -th <height>\n");
-    fprintf(stream, "        The height of the tile in PIXELS. Default: %d. Maximum: %d.\n", DEFAULT_TILE_HEIGHT_PX, MAX_TILE_HEIGHT_PX);
+    fprintf(stream, "        The height of the tile in PIXELS. Default: %d. Minimum: 1. Maximum: %d.\n", DEFAULT_TILE_HEIGHT_PX, MAX_TILE_HEIGHT_PX);
     fprintf(stream, "    -gw <width>\n");
-    fprintf(stream, "        The width of the grid in TILES. Default: %d. Maximum: %d.\n", DEFAULT_GRID_WIDTH_TL, MAX_GRID_WIDTH_TL);
+    fprintf(stream, "        The width of the grid in TILES. Default: %d. Minimum: 1. Maximum: %d.\n", DEFAULT_GRID_WIDTH_TL, MAX_GRID_WIDTH_TL);
     fprintf(stream, "    -gh <height>\n");
-    fprintf(stream, "        The height of the grid in TILES. Default: %d. Maximum: %d.\n", DEFAULT_GRID_HEIGHT_TL, MAX_GRID_HEIGHT_TL);
+    fprintf(stream, "        The height of the grid in TILES. Default: %d. Minimum: 1. Maximum: %d.\n", DEFAULT_GRID_HEIGHT_TL, MAX_GRID_HEIGHT_TL);
 }
 
 #if defined(__GNUC__) || defined(__clang__)
