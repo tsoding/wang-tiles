@@ -155,7 +155,7 @@ typedef struct {
     float time_uniform;         // current time in seconds, used for animation in shaders
 } Renderer;
 
-// TODO: pull the renderer out of the global scope
+// TODO: pull the renderer out of the global scope @cleanup
 static Renderer renderer;
 
 void renderer_free(Renderer *r)
@@ -416,7 +416,7 @@ void live_rendering_with_xlib(void)
         exit(1);
     }
 
-    // TODO: More control over the Visual that is used by live_rendering_with_xlib()
+    // TODO: More control over the Visual that is used by live_rendering_with_xlib() @cleanup
     // Right now we use whatever Visual that is picked by XCreateSimpleWindow
     // Since our render only works with 32bit RGBA pixels we need to be more explicit about
     // what we expect from X11. Probably need to write some code that grabs the list of available
@@ -433,7 +433,7 @@ void live_rendering_with_xlib(void)
     XWindowAttributes wa = {0};
     XGetWindowAttributes(display, window, &wa);
 
-    // TODO: the byte order of the pixels differ between the X11 and our renderer
+    // TODO: the byte order of the pixels differ between the X11 and our renderer @cleanup
     XImage *image = XCreateImage(display,
                                  wa.visual,
                                  wa.depth,

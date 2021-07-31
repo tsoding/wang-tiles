@@ -24,9 +24,8 @@ int main(int argc, char **argv)
 
     // TODO: nobuild subcommand to regenerate ./imgs/*
     // Requires CLI params
-    // - [ ] -tile <width>x<height>
-    // - [ ] -grid <width>x<height>
     // - [ ] -shader <blobs|digits>
+    // - [ ] -color0 #XXXXXX, -color1 #XXXXXX
 
     if (argc > 1) {
         if (strcmp(argv[1], "run") == 0) {
