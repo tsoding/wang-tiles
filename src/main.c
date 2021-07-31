@@ -18,6 +18,10 @@
 
 // TODO: make <TILE_WIDTH_PX>x<TILE_HEIGHT_PX> and <GRID_WIDTH_TL>x<GRID_HEIGHT_TL> runtime parameters @cli
 
+#define DEFAULT_TILE_WIDTH_PX 64
+#define DEFAULT_TILE_HEIGHT_PX 64
+#define MAX_TILE_WIDTH_PX (32 * 1024)
+#define MAX_TILE_HEIGHT_PX (32 * 1024)
 #define TILE_WIDTH_PX 64
 #define TILE_HEIGHT_PX 64
 
@@ -29,6 +33,10 @@ static_assert(ATLAS_WIDTH_TL * ATLAS_HEIGHT_TL == 16, "The amout of tiles in the
 
 #define GRID_WIDTH_TL 13
 #define GRID_HEIGHT_TL 10
+#define DEFAULT_GRID_WIDTH_TL 13
+#define DEFAULT_GRID_HEIGHT_TL 10
+#define MAX_GRID_WIDTH_TL (32 * 1024)
+#define MAX_GRID_HEIGHT_TL (32 * 1024)
 #define GRID_WIDTH_PX (GRID_WIDTH_TL * TILE_WIDTH_PX)
 #define GRID_HEIGHT_PX (GRID_HEIGHT_TL * TILE_HEIGHT_PX)
 
@@ -150,6 +158,90 @@ void generate_tile32(uint32_t *pixels, size_t width, size_t height, size_t strid
 RGBA32 atlas[ATLAS_WIDTH_PX * ATLAS_HEIGHT_PX];
 BLTR grid_tl[GRID_WIDTH_TL * GRID_HEIGHT_TL];
 RGBA32 grid_px[GRID_WIDTH_PX * GRID_HEIGHT_PX];
+// begin = memory
+// end   = memory + memory_size
+
+typedef struct {
+    void *memory;               // the beginning of the renderer memory
+    size_t memory_size;         // the size of the whole renderer memory
+
+    size_t tile_width_px;       // provided by the user
+    size_t tile_height_px;      // provided by the user
+
+    RGBA32 *atlas;              // must be within the memory region defined by `memory` and `memory_size`
+    size_t atlas_width_px;      // must be equal to (ATLAS_WIDTH_TL * tile_width_px)
+    size_t atlas_height_px;     // must be equal to (ATLAS_HEIGHT_TL * tile_height_px)
+
+    BLTR *grid_tl;              // must be within the memory region defined by `memory` and `memory_size`
+    size_t grid_width_tl;       // provided by the user
+    size_t grid_height_tl;      // provided by the user
+
+    RGBA32 *grid_px;            // must be within the memory region defined by `memory` and `memory_size`
+    size_t grid_width_px;       // must be equal to (grid_width_tl * tile_width_px)
+    size_t grid_height_px;      // must be equal to (grid_height_tl * tile_height_px)
+} Renderer;
+
+void renderer_free(Renderer *r)
+{
+    if (r->memory) {
+        free(r->memory);
+    }
+    memset(r, 0, sizeof(*r));
+}
+
+void renderer_realloc(Renderer *r,
+                      size_t tile_width_px, size_t tile_height_px,
+                      size_t grid_width_tl, size_t grid_height_tl)
+{
+    assert(0 < tile_width_px);
+    assert(tile_width_px <= MAX_TILE_WIDTH_PX);
+    assert(0 < tile_height_px);
+    assert(tile_height_px <= MAX_TILE_HEIGHT_PX);
+
+    assert(0 < grid_width_tl);
+    assert(grid_width_tl <= MAX_GRID_WIDTH_TL);
+    assert(0 < grid_height_tl);
+    assert(grid_height_tl <= MAX_GRID_HEIGHT_TL);
+
+    // The maximum values are carefully picked so the final memory_size
+    // does not overflow 64 bit unsigned integer.
+    //
+    // Remove the static_asserts below to confirm that you know what
+    // you are doing. :)
+    static_assert(MAX_TILE_WIDTH_PX == 1024 * 32, "unexpected MAX_TILE_WIDTH_PX");
+    static_assert(MAX_TILE_HEIGHT_PX == 1024 * 32, "unexpected MAX_TILE_HEIGHT_PX");
+    static_assert(MAX_GRID_WIDTH_TL == 1024 * 32, "unexpected MAX_GRID_WIDTH_TL");
+    static_assert(MAX_GRID_HEIGHT_TL == 1024 * 32, "unexpected MAX_GRID_HEIGHT_TL");
+
+    renderer_free(r);
+
+    r->tile_width_px = tile_width_px;
+    r->tile_height_px = tile_height_px;
+
+    r->atlas_width_px = ATLAS_WIDTH_TL * r->tile_width_px;
+    r->atlas_height_px = ATLAS_HEIGHT_TL * r->tile_height_px;
+    size_t atlas_size_bytes = r->atlas_width_px * r->atlas_height_px * sizeof(RGBA32);
+
+    r->grid_width_tl = grid_width_tl;
+    r->grid_height_tl = grid_height_tl;
+    size_t grid_tl_size_bytes = r->grid_width_tl * r->grid_height_tl * sizeof(BLTR);
+    static_assert(sizeof(RGBA32) == sizeof(BLTR), "The renderer memory management model expects RGBA32 and BLTR to be of the same size");
+
+    r->grid_width_px = r->grid_width_tl * r->tile_width_px;
+    r->grid_height_px = r->grid_height_tl * r->tile_height_px;
+    size_t grid_px_size_bytes = r->grid_width_px * r->grid_height_px * sizeof(RGBA32);
+
+    r->memory_size = atlas_size_bytes + grid_tl_size_bytes + grid_px_size_bytes;
+    r->memory = malloc(r->memory_size);
+    if (r->memory == NULL) {
+        fprintf(stderr, "ERROR: could not allocate the memory for the renderer\n");
+        exit(1);
+    }
+
+    r->atlas   = r->memory;
+    r->grid_tl = (BLTR*) ((char*) r->memory + atlas_size_bytes);
+    r->grid_px = (RGBA32*) ((char*) r->memory + atlas_size_bytes + grid_tl_size_bytes);
+}
 
 void *generate_tile_thread(void *arg)
 {
@@ -499,6 +591,16 @@ int main(int argc, char **argv)
     const char *atlas_png_path = "atlas.png";
     const char *grid_png_path = "grid.png";
 
+    size_t tile_width_px = DEFAULT_TILE_WIDTH_PX;
+    size_t tile_height_px = DEFAULT_TILE_HEIGHT_PX;
+    size_t grid_width_tl = DEFAULT_GRID_WIDTH_TL;
+    size_t grid_height_tl = DEFAULT_GRID_HEIGHT_TL;
+
+    Renderer r = {0};
+    renderer_realloc(&r,
+                     tile_width_px, tile_height_px,
+                     grid_width_tl, grid_height_tl);
+
     // TODO: implement Go flag-like module for parsing parameters @stream
     while (argc > 0) {
         const char *param = shift_args(&argc, &argv);
@@ -534,6 +636,8 @@ int main(int argc, char **argv)
     } else {
         offline_rendering_into_png_files(atlas_png_path, grid_png_path);
     }
+
+    renderer_free(&r);
 
     return 0;
 }
