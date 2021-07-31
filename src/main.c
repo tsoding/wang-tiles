@@ -6,6 +6,7 @@
 #include <string.h>
 #include <errno.h>
 #include <time.h>
+#include <limits.h>
 #include <pthread.h>
 
 #include <X11/Xlib.h>
@@ -554,12 +555,19 @@ void help(const char *program, FILE *stream)
     fprintf(stream, "    -help\n");
     fprintf(stream, "        Print this help message to stdout and exit with 0 code\n");
     fprintf(stream, "    -live\n");
-    fprintf(stream, "        Animate and render the Wang Tiles in \"real time\"\n");
-    fprintf(stream, "        in a separate X11 window\n");
+    fprintf(stream, "        Animate and render the Wang Tiles in \"real time\" in a separate X11 window\n");
     fprintf(stream, "    -atlas-png <atlas.png>\n");
-    fprintf(stream, "        Path to the output atlas.png file (default: \"atlas.png\")\n");
+    fprintf(stream, "        Path to the output atlas.png file. Default: \"atlas.png\"\n");
     fprintf(stream, "    -grid-png <grid.png>\n");
-    fprintf(stream, "        Path to the output grid.png file (default: \"grid.png\")\n");
+    fprintf(stream, "        Path to the output grid.png file. Default: \"grid.png\"\n");
+    fprintf(stream, "    -tw <width>\n");
+    fprintf(stream, "        The width of the tile in PIXELS. Default: %d. Maximum: %d.\n", DEFAULT_TILE_WIDTH_PX, MAX_TILE_WIDTH_PX);
+    fprintf(stream, "    -th <height>\n");
+    fprintf(stream, "        The height of the tile in PIXELS. Default: %d. Maximum: %d.\n", DEFAULT_TILE_HEIGHT_PX, MAX_TILE_HEIGHT_PX);
+    fprintf(stream, "    -gw <width>\n");
+    fprintf(stream, "        The width of the grid in TILES. Default: %d. Maximum: %d.\n", DEFAULT_GRID_WIDTH_TL, MAX_GRID_WIDTH_TL);
+    fprintf(stream, "    -gh <height>\n");
+    fprintf(stream, "        The height of the grid in TILES. Default: %d. Maximum: %d.\n", DEFAULT_GRID_HEIGHT_TL, MAX_GRID_HEIGHT_TL);
 }
 
 #if defined(__GNUC__) || defined(__clang__)
@@ -581,6 +589,31 @@ WANG_PRINTF_FORMAT(3, 4) void param_fail(const char *program, const char *param,
     va_end(args);
 
     exit(1);
+}
+
+size_t param_size(const char *program, const char *param, const char *arg_cstr,
+                  size_t min_value, size_t max_value)
+{
+    assert(min_value <= max_value);
+
+    char *endptr = 0;
+    unsigned long int arg_ul = strtoul(arg_cstr, &endptr, 10);
+
+    if (arg_cstr == endptr || *endptr != '\0') {
+        param_fail(program, param, "not a correct number");
+    }
+
+    if (arg_ul == ULONG_MAX && errno == ERANGE) {
+        param_fail(program, param, "integer overflow");
+    }
+
+    size_t result = arg_ul;
+
+    if (!(min_value <= result && result <= MAX_TILE_WIDTH_PX)) {
+        param_fail(program, param, "outside of the allowed range [%zu..%zu]", min_value, max_value);
+    }
+
+    return result;
 }
 
 int main(int argc, char **argv)
@@ -620,6 +653,30 @@ int main(int argc, char **argv)
                 param_fail(program, param, "no argument is provided");
             }
             grid_png_path = shift_args(&argc, &argv);
+        } else if (strcmp(param, "-tw") == 0) {
+            if (argc <= 0) {
+                param_fail(program, param, "no argument is provided");
+            }
+
+            tile_width_px = param_size(program, param, shift_args(&argc, &argv), 1, MAX_TILE_WIDTH_PX);
+        } else if (strcmp(param, "-th") == 0) {
+            if (argc <= 0) {
+                param_fail(program, param, "no argument is provided");
+            }
+
+            tile_height_px = param_size(program, param, shift_args(&argc, &argv), 1, MAX_TILE_HEIGHT_PX);
+        } else if (strcmp(param, "-gw") == 0) {
+            if (argc <= 0) {
+                param_fail(program, param, "no argument is provided");
+            }
+
+            grid_width_tl = param_size(program, param, shift_args(&argc, &argv), 1, MAX_GRID_WIDTH_TL);
+        } else if (strcmp(param, "-gh") == 0) {
+            if (argc <= 0) {
+                param_fail(program, param, "no argument is provided");
+            }
+
+            grid_height_tl = param_size(program, param, shift_args(&argc, &argv), 1, MAX_GRID_HEIGHT_TL);
         } else {
             param_fail(program, param, "unknown parameter");
         }
