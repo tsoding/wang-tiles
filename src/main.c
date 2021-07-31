@@ -219,6 +219,7 @@ void renderer_realloc(Renderer *r,
         exit(1);
     }
 
+    // TODO: make sure the memory alignment is right @cleanup
     r->memory = malloc(r->memory_size);
     if (r->memory == NULL) {
         fprintf(stderr, "ERROR: could not allocate the memory for the renderer: %s\n", strerror(errno));
