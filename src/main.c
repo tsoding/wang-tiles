@@ -64,7 +64,7 @@ static const RGB colors[] = {
 };
 static_assert(sizeof(colors) / sizeof(colors[0]) == 2, "colors array must have exactly 2 elements");
 
-// TODO: more wang tile ideas:
+// TODO: more wang tile ideas: @stream
 // - Metaballs: https://en.wikipedia.org/wiki/Metaballs
 
 //     t
@@ -80,7 +80,7 @@ static_assert(sizeof(colors) / sizeof(colors[0]) == 2, "colors array must have e
 //   ...
 //   1111 = 15
 //
-// TODO: try to speed up the shader with SIMD instructions
+// TODO: try to speed up the shader with SIMD instructions @stream
 RGB wang_blobs(float time_uniform, BLTR bltr, UV uv)
 {
     float r = lerpf(0.0f, 1.0f, (sinf(time_uniform * 2.0f) + 1.0f) / 2.0f);
