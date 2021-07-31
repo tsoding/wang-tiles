@@ -17,8 +17,6 @@
 #include "./la.c"
 #include "./prof.c"
 
-// TODO: make <TILE_WIDTH_PX>x<TILE_HEIGHT_PX> and <GRID_WIDTH_TL>x<GRID_HEIGHT_TL> runtime parameters @cli
-
 #define DEFAULT_TILE_WIDTH_PX 64
 #define DEFAULT_TILE_HEIGHT_PX 64
 #define MAX_TILE_WIDTH_PX (32 * 1024)
