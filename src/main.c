@@ -477,7 +477,7 @@ void live_rendering_with_xlib(void)
     XCloseDisplay(display);
 }
 
-void offline_rendering_into_png_files(const char *atlas_png_path, const char *grid_png_path)
+void offline_rendering_into_png_files(int no_png, const char *atlas_png_path, const char *grid_png_path)
 {
     Renderer *r = &renderer;
 
@@ -507,27 +507,29 @@ void offline_rendering_into_png_files(const char *atlas_png_path, const char *gr
         }
         end_clock();
 
-        begin_clock("ATLAS PNG OUTPUT");
-        {
-            if (!stbi_write_png(atlas_png_path, r->atlas_width_px, r->atlas_height_px, 4, r->atlas, r->atlas_width_px * sizeof(RGBA32))) {
-                fprintf(stderr, "ERROR: could not save file %s: %s\n", atlas_png_path,
-                        strerror(errno));
-                exit(1);
+        if (!no_png) {
+            begin_clock("ATLAS PNG OUTPUT");
+            {
+                if (!stbi_write_png(atlas_png_path, r->atlas_width_px, r->atlas_height_px, 4, r->atlas, r->atlas_width_px * sizeof(RGBA32))) {
+                    fprintf(stderr, "ERROR: could not save file %s: %s\n", atlas_png_path,
+                            strerror(errno));
+                    exit(1);
+                }
             }
-        }
-        end_clock();
-        printf("Atlas saved to %s\n", atlas_png_path);
+            end_clock();
+            printf("Atlas saved to %s\n", atlas_png_path);
 
-        begin_clock("GRID PNG OUTPUT");
-        {
-            if (!stbi_write_png(grid_png_path, r->grid_width_px, r->grid_height_px, 4, r->grid_px, r->grid_width_px * sizeof(RGBA32))) {
-                fprintf(stderr, "ERROR: could not save file %s: %s\n", grid_png_path,
-                        strerror(errno));
-                exit(1);
+            begin_clock("GRID PNG OUTPUT");
+            {
+                if (!stbi_write_png(grid_png_path, r->grid_width_px, r->grid_height_px, 4, r->grid_px, r->grid_width_px * sizeof(RGBA32))) {
+                    fprintf(stderr, "ERROR: could not save file %s: %s\n", grid_png_path,
+                            strerror(errno));
+                    exit(1);
+                }
             }
+            end_clock();
+            printf("Grid saved to %s\n", grid_png_path);
         }
-        end_clock();
-        printf("Grid saved to %s\n", grid_png_path);
     }
     end_clock();
 
@@ -556,6 +558,8 @@ void help(const char *program, FILE *stream)
     fprintf(stream, "        Path to the output atlas.png file. Default: \"atlas.png\"\n");
     fprintf(stream, "    -grid-png <grid.png>\n");
     fprintf(stream, "        Path to the output grid.png file. Default: \"grid.png\"\n");
+    fprintf(stream, "    -no-png\n");
+    fprintf(stream, "        Don't output any png files in the offline mode. Just test the performance of the renderer\n");
     fprintf(stream, "    -tw <width>\n");
     fprintf(stream, "        The width of the tile in PIXELS. Default: %d. Maximum: %d.\n", DEFAULT_TILE_WIDTH_PX, MAX_TILE_WIDTH_PX);
     fprintf(stream, "    -th <height>\n");
@@ -621,6 +625,7 @@ int main(int argc, char **argv)
     const char *program = shift_args(&argc, &argv);
 
     int live = 0;
+    int no_png = 0;
     const char *atlas_png_path = "atlas.png";
     const char *grid_png_path = "grid.png";
 
@@ -648,6 +653,8 @@ int main(int argc, char **argv)
                 param_fail(program, param, "no argument is provided");
             }
             grid_png_path = shift_args(&argc, &argv);
+        } else if (strcmp(param, "-no-png") == 0) {
+            no_png = 1;
         } else if (strcmp(param, "-tw") == 0) {
             if (argc <= 0) {
                 param_fail(program, param, "no argument is provided");
@@ -687,7 +694,7 @@ int main(int argc, char **argv)
     if (live) {
         live_rendering_with_xlib();
     } else {
-        offline_rendering_into_png_files(atlas_png_path, grid_png_path);
+        offline_rendering_into_png_files(no_png, atlas_png_path, grid_png_path);
     }
 
     renderer_free(r);
