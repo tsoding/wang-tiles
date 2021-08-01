@@ -14,6 +14,9 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 
+#define FLAG_IMPLEMENTATION
+#include "./flag.h"
+
 #include "./la.c"
 #include "./prof.c"
 
@@ -220,7 +223,7 @@ void renderer_realloc(Renderer *r,
     }
 
     // TODO: make sure the memory alignment is right @cleanup
-    // malloc(), according to the docs, already returns the memory that is 
+    // malloc(), according to the docs, already returns the memory that is
     // "suitably aligned for any built-in type".
     // I think the only thing we need to check if the regions sizes are divisible by 8
     // so their starts don't end up on the boundry of a word. If they are not we should pad them.
@@ -496,7 +499,7 @@ void live_rendering_with_xlib(void)
     XCloseDisplay(display);
 }
 
-void offline_rendering_into_png_files(int no_png, const char *atlas_png_path, const char *grid_png_path)
+void offline_rendering_into_png_files(bool no_png, const char *atlas_png_path, const char *grid_png_path)
 {
     Renderer *r = &renderer;
 
@@ -565,76 +568,21 @@ char *shift_args(int *argc, char ***argv)
     return result;
 }
 
-void help(const char *program, FILE *stream)
+void usage(const char *program, FILE *stream)
 {
     fprintf(stream, "Usage: %s [OPTIONS]\n", program);
     fprintf(stream, "OPTIONS:\n");
-    fprintf(stream, "    -help\n");
-    fprintf(stream, "        Print this help message to stdout and exit with 0 code\n");
-    fprintf(stream, "    -live\n");
-    fprintf(stream, "        Animate and render the Wang Tiles in \"real time\" in a separate X11 window\n");
-    fprintf(stream, "    -atlas-png <atlas.png>\n");
-    fprintf(stream, "        Path to the output atlas.png file. Default: \"atlas.png\"\n");
-    fprintf(stream, "    -grid-png <grid.png>\n");
-    fprintf(stream, "        Path to the output grid.png file. Default: \"grid.png\"\n");
-    fprintf(stream, "    -no-png\n");
-    fprintf(stream, "        Don't output any png files in the offline mode. Just test the performance of the renderer\n");
-    fprintf(stream, "    -not-potato\n");
-    fprintf(stream, "        Confirm that your machine is not a potato\n");
-    fprintf(stream, "    -tw <width>\n");
-    fprintf(stream, "        The width of the tile in PIXELS. Default: %d. Minimum: 1. Maximum: %d.\n", DEFAULT_TILE_WIDTH_PX, MAX_TILE_WIDTH_PX);
-    fprintf(stream, "    -th <height>\n");
-    fprintf(stream, "        The height of the tile in PIXELS. Default: %d. Minimum: 1. Maximum: %d.\n", DEFAULT_TILE_HEIGHT_PX, MAX_TILE_HEIGHT_PX);
-    fprintf(stream, "    -gw <width>\n");
-    fprintf(stream, "        The width of the grid in TILES. Default: %d. Minimum: 1. Maximum: %d.\n", DEFAULT_GRID_WIDTH_TL, MAX_GRID_WIDTH_TL);
-    fprintf(stream, "    -gh <height>\n");
-    fprintf(stream, "        The height of the grid in TILES. Default: %d. Minimum: 1. Maximum: %d.\n", DEFAULT_GRID_HEIGHT_TL, MAX_GRID_HEIGHT_TL);
+    flag_print_options(stream);
 }
 
-#if defined(__GNUC__) || defined(__clang__)
-// https://gcc.gnu.org/onlinedocs/gcc-4.7.2/gcc/Function-Attributes.html
-#define WANG_PRINTF_FORMAT(STRING_INDEX, FIRST_TO_CHECK) __attribute__ ((format (printf, STRING_INDEX, FIRST_TO_CHECK)))
-#else
-#define WANG_PRINTF_FORMAT(STRING_INDEX, FIRST_TO_CHECK)
-#endif
-
-WANG_PRINTF_FORMAT(3, 4) void param_fail(const char *program, const char *param, const char *fmt, ...)
+void check_flag_range(const char *program, uint64_t *flag, uint64_t min, uint64_t max)
 {
-    help(program, stderr);
-    fprintf(stderr, "ERROR: %s: ", param);
-
-    va_list args;
-    va_start(args, fmt);
-    vfprintf(stderr, fmt, args);
-    fprintf(stderr, "\n");
-    va_end(args);
-
-    exit(1);
-}
-
-size_t param_size(const char *program, const char *param, const char *arg_cstr,
-                  size_t min_value, size_t max_value)
-{
-    assert(min_value <= max_value);
-
-    char *endptr = 0;
-    unsigned long int arg_ul = strtoul(arg_cstr, &endptr, 10);
-
-    if (arg_cstr == endptr || *endptr != '\0') {
-        param_fail(program, param, "not a correct number");
+    if (!(min <= *flag && *flag <= max)) {
+        usage(program, stderr);
+        fprintf(stderr, "ERROR: -%s: outside of the range [%"PRIu64"..%"PRIu64"]\n",
+                flag_name(flag), min, max);
+        exit(1);
     }
-
-    if (arg_ul == ULONG_MAX && errno == ERANGE) {
-        param_fail(program, param, "integer overflow");
-    }
-
-    size_t result = arg_ul;
-
-    if (!(min_value <= result && result <= MAX_TILE_WIDTH_PX)) {
-        param_fail(program, param, "outside of the allowed range [%zu..%zu]", min_value, max_value);
-    }
-
-    return result;
 }
 
 int main(int argc, char **argv)
@@ -643,82 +591,47 @@ int main(int argc, char **argv)
 
     srand(time(0));
 
-    const char *program = shift_args(&argc, &argv);
+    bool *help = flag_bool("help", false, "Print this help to stdout and exit with 0");
+    bool *live = flag_bool("live", false, "Animate and render the Wang Tiles in \"real time\" in a separate X11 window");
+    bool *no_png = flag_bool("no-png", false, "Don't output any png files in the offline mode. Just test the performance of the renderer");
+    bool *not_potato = flag_bool("not_potato", false, "Confirm that your machine is not a potato");
+    char **atlas_png_path = flag_str("atlas-png", "atlas.png", "Path to the output atlas.png file");
+    char **grid_png_path = flag_str("grid-png", "grid.png", "Path to the output grid.png file");
+    uint64_t *tw = flag_uint64("tw", DEFAULT_TILE_WIDTH_PX, "The width of the tile in PIXELS");
+    uint64_t *th = flag_uint64("th", DEFAULT_TILE_HEIGHT_PX, "The height of the tile in PIXELS");
+    uint64_t *gw = flag_uint64("gw", DEFAULT_GRID_WIDTH_TL, "The width of the grid in TILES");
+    uint64_t *gh = flag_uint64("gh", DEFAULT_GRID_HEIGHT_TL, "The height of the grid in TILES");
 
-    int live = 0;
-    int no_png = 0;
-    int not_potato = 0;
-    const char *atlas_png_path = "atlas.png";
-    const char *grid_png_path = "grid.png";
+    assert(argc >= 1);
+    const char *program = argv[0];
 
-    size_t tile_width_px = DEFAULT_TILE_WIDTH_PX;
-    size_t tile_height_px = DEFAULT_TILE_HEIGHT_PX;
-    size_t grid_width_tl = DEFAULT_GRID_WIDTH_TL;
-    size_t grid_height_tl = DEFAULT_GRID_HEIGHT_TL;
-
-    // TODO: implement Go flag-like module for parsing parameters @stream
-    while (argc > 0) {
-        const char *param = shift_args(&argc, &argv);
-
-        if (strcmp(param, "-live") == 0) {
-            live = 1;
-        } else if (strcmp(param, "-help") == 0) {
-            help(program, stdout);
-            exit(0);
-        } else if (strcmp(param, "-atlas-png") == 0) {
-            if (argc <= 0) {
-                param_fail(program, param, "no argument is provided");
-            }
-            atlas_png_path = shift_args(&argc, &argv);
-        } else if (strcmp(param, "-grid-png") == 0) {
-            if (argc <= 0) {
-                param_fail(program, param, "no argument is provided");
-            }
-            grid_png_path = shift_args(&argc, &argv);
-        } else if (strcmp(param, "-no-png") == 0) {
-            no_png = 1;
-        } else if (strcmp(param, "-not-potato") == 0) {
-            not_potato = 1;
-        } else if (strcmp(param, "-tw") == 0) {
-            if (argc <= 0) {
-                param_fail(program, param, "no argument is provided");
-            }
-
-            tile_width_px = param_size(program, param, shift_args(&argc, &argv), 1, MAX_TILE_WIDTH_PX);
-        } else if (strcmp(param, "-th") == 0) {
-            if (argc <= 0) {
-                param_fail(program, param, "no argument is provided");
-            }
-
-            tile_height_px = param_size(program, param, shift_args(&argc, &argv), 1, MAX_TILE_HEIGHT_PX);
-        } else if (strcmp(param, "-gw") == 0) {
-            if (argc <= 0) {
-                param_fail(program, param, "no argument is provided");
-            }
-
-            grid_width_tl = param_size(program, param, shift_args(&argc, &argv), 1, MAX_GRID_WIDTH_TL);
-        } else if (strcmp(param, "-gh") == 0) {
-            if (argc <= 0) {
-                param_fail(program, param, "no argument is provided");
-            }
-
-            grid_height_tl = param_size(program, param, shift_args(&argc, &argv), 1, MAX_GRID_HEIGHT_TL);
-        } else {
-            param_fail(program, param, "unknown parameter");
-        }
+    if (!flag_parse(argc, argv)) {
+        usage(program, stderr);
+        flag_print_error(stderr);
+        exit(1);
     }
 
-    renderer_realloc(r, not_potato, tile_width_px, tile_height_px, grid_width_tl, grid_height_tl);
+    if (*help) {
+        usage(program, stdout);
+        exit(0);
+    }
+
+    check_flag_range(program, tw, 1, MAX_TILE_WIDTH_PX);
+    check_flag_range(program, th, 1, MAX_TILE_HEIGHT_PX);
+    check_flag_range(program, gw, 1, MAX_GRID_WIDTH_TL);
+    check_flag_range(program, gh, 1, MAX_GRID_HEIGHT_TL);
+
+    renderer_realloc(r, *not_potato, *tw, *th, *gw, *gh);
 
     printf("Tile Size (px):      %zux%zu\n", r->tile_width_px, r->tile_height_px);
     printf("Grid Size (tl):      %zux%zu\n", r->grid_width_tl, r->grid_height_tl);
     printf("Grid Size (px):      %zux%zu\n", r->grid_width_px, r->grid_height_px);
     printf("Memory Size (bytes): %zu\n", r->memory_size);
 
-    if (live) {
+    if (*live) {
         live_rendering_with_xlib();
     } else {
-        offline_rendering_into_png_files(no_png, atlas_png_path, grid_png_path);
+        offline_rendering_into_png_files(*no_png, *atlas_png_path, *grid_png_path);
     }
 
     renderer_free(r);
