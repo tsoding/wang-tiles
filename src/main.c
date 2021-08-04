@@ -489,6 +489,8 @@ void live_rendering_with_xlib(void)
         // TODO: live rendering animation that transitions between different grids @stream
         render_atlas();
         render_grid();
+        // TODO: XPutImage is slow, try to use XCopyArea instead @stream
+        // https://www.x.org/releases/X11R7.5/doc/man/man3/XCopyArea.3.html
         XPutImage(display, window, gc, image,
                   0, 0,
                   0, 0,
