@@ -17,19 +17,6 @@
 #define FLAG_IMPLEMENTATION
 #include "./flag.h"
 
-#define X 0
-#define Y 1
-#define Z 2
-#define W 3
-
-#define U 0
-#define V 1
-
-#define R 0
-#define G 1
-#define B 2
-#define A 3
-
 #define LA_IMPLEMENTATION
 #include "./la.h"
 
@@ -68,20 +55,20 @@ RGBA32 make_rgba32(float r, float g, float b)
 
 // TODO: colors as runtime parameters @cli
 static const RGB colors[] = {
-    // {{1.0f, 0.0f, 0.0f}}, // 0
-    // {{0.0f, 1.0f, 1.0f}}, // 1
+    // {1.0f, 0.0f, 0.0f}, // 0
+    // {0.0f, 1.0f, 1.0f}, // 1
 
-    // {{1.0f, 1.0f, 0.0f}}, // 0
-    // {{0.0f, 0.0f, 1.0f}}, // 1
+    // {1.0f, 1.0f, 0.0f}, // 0
+    // {0.0f, 0.0f, 1.0f}, // 1
 
-    // {{0.99f, 0.99f, 0.01f}}, // 0
-    // {{0.01f, 0.01f, 0.99f}}, // 1
+    // {0.99f, 0.99f, 0.01f}, // 0
+    // {0.01f, 0.01f, 0.99f}, // 1
 
-    // {{0.0f, 1.0f, 0.0f}}, // 0
-    // {{1.0f, 0.0f, 1.0f}}, // 1
+    // {0.0f, 1.0f, 0.0f}, // 0
+    // {1.0f, 0.0f, 1.0f}, // 1
 
-    {{0.0f, 0.0f, 0.0f}}, // 0
-    {{1.0f, 1.0f, 1.0f}}, // 1
+    {0.0f, 0.0f, 0.0f}, // 0
+    {1.0f, 1.0f, 1.0f}, // 1
 };
 static_assert(sizeof(colors) / sizeof(colors[0]) == 2, "colors array must have exactly 2 elements");
 
@@ -107,10 +94,10 @@ RGB wang_blobs(float time_uniform, BLTR bltr, UV uv)
     float r = lerpf(0.0f, 1.0f, (sinf(time_uniform * 2.0f) + 1.0f) / 2.0f);
 
     static const V2f sides[4] = {
-        {{1.0, 0.5}}, // r
-        {{0.5, 0.0}}, // t
-        {{0.0, 0.5}}, // l
-        {{0.5, 1.0}}, // b
+        {1.0, 0.5}, // r
+        {0.5, 0.0}, // t
+        {0.0, 0.5}, // l
+        {0.5, 1.0}, // b
     };
 
     RGB result = v3fs(0.0f);
@@ -126,10 +113,10 @@ RGB wang_blobs(float time_uniform, BLTR bltr, UV uv)
 RGB wang_digits(float time_uniform, BLTR bltr, UV uv)
 {
     float ds[4] = {
-        1.0f - uv.c[X], // r
-        uv.c[Y],        // t
-        uv.c[X],        // l
-        1.0f - uv.c[Y], // b
+        1.0f - uv.x, // r
+        uv.y,        // t
+        uv.x,        // l
+        1.0f - uv.y, // b
     };
 
     int index = -1;
@@ -265,7 +252,7 @@ void generate_tile32(uint32_t *pixels, size_t width, size_t height, size_t strid
             float u = (float) x / (float) width;
             float v = (float) y / (float) height;
             RGB p = shader(r->time_uniform, bltr, v2f(u, v));
-            pixels[y * stride + x] = make_rgba32(p.c[R], p.c[G], p.c[B]);
+            pixels[y * stride + x] = make_rgba32(p.x, p.y, p.z);
         }
     }
 }
