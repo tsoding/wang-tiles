@@ -116,7 +116,7 @@ RGB wang_blobs(float time_uniform, BLTR bltr, UV uv)
     RGB result = v3fs(0.0f);
     for (size_t i = 0; i < 4; ++i) {
         V2f p = sides[i];
-        float t = 1.0f - fminf(sqrtf(v2f_sqrlen(v2f_sub(p, uv))) / r, 1.0f);
+        float t = 1.0f - fminf(v2f_len(v2f_sub(p, uv)) / r, 1.0f);
         result = v3f_lerp(result, colors[bltr & 1], v3fs(t));
         bltr = bltr >> 1;
     }
