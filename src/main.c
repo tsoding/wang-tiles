@@ -601,7 +601,7 @@ int main(int argc, char **argv)
     bool *help = flag_bool("help", false, "Print this help to stdout and exit with 0");
     bool *live = flag_bool("live", false, "Animate and render the Wang Tiles in \"real time\" in a separate X11 window");
     bool *no_png = flag_bool("no-png", false, "Don't output any png files in the offline mode. Just test the performance of the renderer");
-    bool *not_potato = flag_bool("not_potato", false, "Confirm that your machine is not a potato");
+    bool *not_potato = flag_bool("not-potato", false, "Confirm that your machine is not a potato");
     char **atlas_png_path = flag_str("atlas-png", "atlas.png", "Path to the output atlas.png file");
     char **grid_png_path = flag_str("grid-png", "grid.png", "Path to the output grid.png file");
     uint64_t *tw = flag_uint64("tw", DEFAULT_TILE_WIDTH_PX, "The width of the tile in PIXELS");
