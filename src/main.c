@@ -100,14 +100,14 @@ RGB wang_blobs(float time_uniform, BLTR bltr, UV uv)
         {0.5, 1.0}, // b
     };
 
-    RGB result = v3fs(0.0f);
+    RGB result = v3ff(0.0f);
     for (size_t i = 0; i < 4; ++i) {
         V2f p = sides[i];
         float t = 1.0f - fminf(v2f_len(v2f_sub(p, uv)) / r, 1.0f);
-        result = v3f_lerp(result, colors[bltr & 1], v3fs(t));
+        result = v3f_lerp(result, colors[bltr & 1], v3ff(t));
         bltr = bltr >> 1;
     }
-    return v3f_pow(result, v3fs(1.0f / 2.2f));
+    return v3f_pow(result, v3ff(1.0f / 2.2f));
 }
 
 RGB wang_digits(float time_uniform, BLTR bltr, UV uv)
@@ -130,8 +130,8 @@ RGB wang_digits(float time_uniform, BLTR bltr, UV uv)
 
     if (ds[index] > r) {
         float t = 1.0f - (float) bltr / 16.0f;
-        V3f result = v3f_lerp(colors[0], colors[1], v3fs(t));
-        return v3f_pow(result, v3fs(1.0f / 2.2f));
+        V3f result = v3f_lerp(colors[0], colors[1], v3ff(t));
+        return v3f_pow(result, v3ff(1.0f / 2.2f));
     }
 
     while (index-- > 0) {
