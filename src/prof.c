@@ -15,6 +15,8 @@ typedef struct {
     Entry *entry;
 } Clock;
 
+// TODO: several active contexts
+
 #define CLOCK_STACK_CAP 256
 Clock clock_stack[CLOCK_STACK_CAP];
 size_t clock_stack_count = 0;
