@@ -42,6 +42,7 @@ static_assert(ATLAS_WIDTH_TL * ATLAS_HEIGHT_TL == 16, "The amout of tiles in the
 #define MAX_GRID_HEIGHT_TL (32 * 1024)
 
 #define POTATO_SIZE (2 * 1000 * 1000 * 1000)
+#define THREADS 5
 
 typedef uint32_t BLTR;
 typedef RGB (*Frag_Shader)(float time_uniform, BLTR bltr, UV uv);
@@ -262,23 +263,27 @@ typedef struct {
     size_t tile_width_px;
     size_t tile_height_px;
     size_t atlas_width_px;
+    size_t atlas_height_px;
     RGBA32 *atlas;
     float time_uniform;
-    BLTR bltr;
+    BLTR bltr_start;
+    BLTR bltr_step;
 } Generate_Tile_Thread_Params;
 
 void *generate_tile_thread(void *arg)
 {
     Generate_Tile_Thread_Params params = *(Generate_Tile_Thread_Params*) arg;
 
-    size_t y = (params.bltr / ATLAS_WIDTH_TL) * params.tile_width_px;
-    size_t x = (params.bltr % ATLAS_WIDTH_TL) * params.tile_width_px;
+    for (BLTR bltr = params.bltr_start; bltr < 16; bltr += params.bltr_step) {
+        size_t y = (bltr / ATLAS_WIDTH_TL) * params.tile_width_px;
+        size_t x = (bltr % ATLAS_WIDTH_TL) * params.tile_width_px;
 
-    // TODO: the tile shader as the runtime parameter @cli
-    generate_tile32(
-        &params.atlas[y * params.atlas_width_px + x],
-        params.tile_width_px, params.tile_height_px, params.atlas_width_px,
-        params.time_uniform, params.bltr, wang_digits);
+        // TODO: the tile shader as the runtime parameter @cli
+        generate_tile32(
+                &params.atlas[y * params.atlas_width_px + x],
+                params.tile_width_px, params.tile_height_px, params.atlas_width_px,
+                params.time_uniform, bltr, wang_digits);
+    }
 
     return NULL;
 }
@@ -289,21 +294,22 @@ void render_atlas(void)
 {
     Renderer *r = &renderer;
     // TODO: it would be nice to figure out how to not recreate the threads on each render_atlas()
-    pthread_t threads[16] = {0};
-    Generate_Tile_Thread_Params params[16] = {0};
+    pthread_t threads[THREADS] = {0};
+    Generate_Tile_Thread_Params params[THREADS] = {0};
 
-    for (size_t i = 0; i < 16; ++i) {
+    for (size_t i = 0; i < THREADS; ++i) {
         // TODO: can we get rid of pthread dependency on Linux completely and just use clone(2) directly
         params[i].tile_width_px = r->tile_width_px;
         params[i].tile_height_px = r->tile_height_px;
         params[i].atlas_width_px = r->atlas_width_px;
         params[i].atlas = r->atlas;
         params[i].time_uniform = r->time_uniform;
-        params[i].bltr = i;
+        params[i].bltr_start = i;
+        params[i].bltr_step = THREADS;
         pthread_create(&threads[i], NULL, generate_tile_thread, (void*) &params[i]);
     }
 
-    for (size_t i = 0; i < 16; ++i) {
+    for (size_t i = 0; i < THREADS; ++i) {
         pthread_join(threads[i], NULL);
     }
 }
