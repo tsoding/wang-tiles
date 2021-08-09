@@ -10,6 +10,8 @@
 #include <pthread.h>
 
 #include <X11/Xlib.h>
+#define XK_LATIN1
+#include <X11/keysymdef.h>
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
@@ -462,7 +464,7 @@ void live_rendering_with_xlib(void)
     Atom wm_delete_window = XInternAtom(display, "WM_DELETE_WINDOW", False);
     XSetWMProtocols(display, window, &wm_delete_window, 1);
 
-    XSelectInput(display, window, 0);
+    XSelectInput(display, window, KeyPressMask);
 
     XMapWindow(display, window);
 
@@ -473,6 +475,12 @@ void live_rendering_with_xlib(void)
             XNextEvent(display, &event);
             switch (event.type) {
             // TODO: animation controls in live rendering
+            case KeyPress: {
+                switch (XLookupKeysym(&event.xkey, 0)) {
+                case 'q': quit = 1; break;
+                default: {}
+                }
+            } break;
             case ClientMessage: {
                 if ((Atom) event.xclient.data.l[0] == wm_delete_window) {
                     quit = 1;
