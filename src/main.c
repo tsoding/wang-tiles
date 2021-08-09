@@ -244,14 +244,13 @@ void renderer_realloc(Renderer *r,
 }
 
 void generate_tile32(uint32_t *pixels, size_t width, size_t height, size_t stride,
-                     BLTR bltr, Frag_Shader shader)
+                     float time_uniform, BLTR bltr, Frag_Shader shader)
 {
-    Renderer *r = &renderer;
     for (size_t y = 0; y < height; ++y) {
         for (size_t x = 0; x < width; ++x) {
             float u = (float) x / (float) width;
             float v = (float) y / (float) height;
-            RGB p = shader(r->time_uniform, bltr, v2f(u, v));
+            RGB p = shader(time_uniform, bltr, v2f(u, v));
             pixels[y * stride + x] = make_rgba32(p.x, p.y, p.z);
         }
     }
@@ -270,7 +269,7 @@ void *generate_tile_thread(void *arg)
     generate_tile32(
         &r->atlas[y * r->atlas_width_px + x],
         r->tile_width_px, r->tile_height_px, r->atlas_width_px,
-        bltr, wang_digits);
+        r->time_uniform, bltr, wang_digits);
 
     return NULL;
 }
