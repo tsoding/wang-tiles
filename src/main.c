@@ -265,11 +265,11 @@ typedef struct {
     float time_uniform;
     BLTR bltr_start;
     BLTR bltr_step;
-} Generate_Tile_Thread_Params;
+} Render_Atlas_Thread_Params;
 
-void *generate_tile_thread(void *arg)
+void *render_atlas_thread(void *arg)
 {
-    Generate_Tile_Thread_Params params = *(Generate_Tile_Thread_Params*) arg;
+    Render_Atlas_Thread_Params params = *(Render_Atlas_Thread_Params*) arg;
 
     for (BLTR bltr = params.bltr_start; bltr < 16; bltr += params.bltr_step) {
         size_t y = (bltr / ATLAS_WIDTH_TL) * params.tile_width_px;
@@ -291,10 +291,10 @@ void render_atlas(Renderer *r)
 {
     // TODO: it would be nice to figure out how to not recreate the threads on each render_atlas()
     pthread_t threads[THREADS] = {0};
-    Generate_Tile_Thread_Params params[THREADS] = {0};
+    Render_Atlas_Thread_Params params[THREADS] = {0};
 
     for (size_t i = 0; i < THREADS; ++i) {
-        // TODO: can we get rid of pthread dependency on Linux completely and just use clone(2) directly
+        // TODO: can we get rid of pthread dependency on Linux completely and just use clone(2) directly?
         params[i].tile_width_px = r->tile_width_px;
         params[i].tile_height_px = r->tile_height_px;
         params[i].atlas_width_px = r->atlas_width_px;
@@ -302,7 +302,7 @@ void render_atlas(Renderer *r)
         params[i].time_uniform = r->time_uniform;
         params[i].bltr_start = i;
         params[i].bltr_step = THREADS;
-        pthread_create(&threads[i], NULL, generate_tile_thread, (void*) &params[i]);
+        pthread_create(&threads[i], NULL, render_atlas_thread, (void*) &params[i]);
     }
 
     for (size_t i = 0; i < THREADS; ++i) {
