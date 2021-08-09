@@ -166,9 +166,6 @@ typedef struct {
     float time_uniform;         // current time in seconds, used for animation in shaders
 } Renderer;
 
-// TODO: pull the renderer out of the global scope @cleanup
-static Renderer renderer;
-
 void renderer_free(Renderer *r)
 {
     if (r->memory) {
@@ -290,9 +287,8 @@ void *generate_tile_thread(void *arg)
 
 // TODO: a runtime parameter to limit the amount of created threads @cli
 // ./wang -j5
-void render_atlas(void)
+void render_atlas(Renderer *r)
 {
-    Renderer *r = &renderer;
     // TODO: it would be nice to figure out how to not recreate the threads on each render_atlas()
     pthread_t threads[THREADS] = {0};
     Generate_Tile_Thread_Params params[THREADS] = {0};
@@ -353,10 +349,8 @@ void copy_pixels32(RGBA32 *dst, size_t dst_stride,
     }
 }
 
-void generate_grid(void)
+void generate_grid(Renderer *r)
 {
-    Renderer *r = &renderer;
-
     // +---+---+---+
     // | m | l | l
     // +---+---+---+
@@ -417,9 +411,8 @@ void generate_grid(void)
     }
 }
 
-void render_grid(void)
+void render_grid(Renderer *r)
 {
-    Renderer *r = &renderer;
     // TODO: parallelize grid rendering
     for (size_t gy_tl = 0; gy_tl < r->grid_height_tl; ++gy_tl) {
         for (size_t gx_tl = 0; gx_tl < r->grid_width_tl; ++gx_tl) {
@@ -439,11 +432,9 @@ void render_grid(void)
     }
 }
 
-void live_rendering_with_xlib(void)
+void live_rendering_with_xlib(Renderer *r)
 {
-    Renderer *r = &renderer;
-
-    generate_grid();
+    generate_grid(r);
 
     Display *display = XOpenDisplay(NULL);
     if (display == NULL) {
@@ -520,8 +511,8 @@ void live_rendering_with_xlib(void)
         r->time_uniform = (float) now.tv_sec + (now.tv_nsec / 1000) * 0.000001;
 
         // TODO: live rendering animation that transitions between different grids @stream
-        render_atlas();
-        render_grid();
+        render_atlas(r);
+        render_grid(r);
         // TODO: XPutImage is slow, try to use XCopyArea instead @stream
         // https://www.x.org/releases/X11R7.5/doc/man/man3/XCopyArea.3.html
         XPutImage(display, window, gc, image,
@@ -534,17 +525,15 @@ void live_rendering_with_xlib(void)
     XCloseDisplay(display);
 }
 
-void offline_rendering_into_png_files(bool no_png, const char *atlas_png_path, const char *grid_png_path)
+void offline_rendering_into_png_files(Renderer *r, bool no_png, const char *atlas_png_path, const char *grid_png_path)
 {
-    Renderer *r = &renderer;
-
     begin_clock("TOTAL");
     {
         begin_clock("RENDERING");
         {
             begin_clock("ATLAS RENDERING");
             {
-                render_atlas();
+                render_atlas(r);
             }
             end_clock();
 
@@ -552,13 +541,13 @@ void offline_rendering_into_png_files(bool no_png, const char *atlas_png_path, c
             // Grid generation and atlas rendering are completely independant.
             begin_clock("GRID GENERATION");
             {
-                generate_grid();
+                generate_grid(r);
             }
             end_clock();
 
             begin_clock("GRID RENDERING");
             {
-                render_grid();
+                render_grid(r);
             }
             end_clock();
         }
@@ -622,7 +611,7 @@ void check_flag_range(const char *program, uint64_t *flag, uint64_t min, uint64_
 
 int main(int argc, char **argv)
 {
-    Renderer *r = &renderer;
+    Renderer r = {0};
 
     srand(time(0));
 
@@ -656,20 +645,20 @@ int main(int argc, char **argv)
     check_flag_range(program, gw, 1, MAX_GRID_WIDTH_TL);
     check_flag_range(program, gh, 1, MAX_GRID_HEIGHT_TL);
 
-    renderer_realloc(r, *not_potato, *tw, *th, *gw, *gh);
+    renderer_realloc(&r, *not_potato, *tw, *th, *gw, *gh);
 
-    printf("Tile Size (px):      %zux%zu\n", r->tile_width_px, r->tile_height_px);
-    printf("Grid Size (tl):      %zux%zu\n", r->grid_width_tl, r->grid_height_tl);
-    printf("Grid Size (px):      %zux%zu\n", r->grid_width_px, r->grid_height_px);
-    printf("Memory Size (bytes): %zu\n", r->memory_size);
+    printf("Tile Size (px):      %zux%zu\n", r.tile_width_px, r.tile_height_px);
+    printf("Grid Size (tl):      %zux%zu\n", r.grid_width_tl, r.grid_height_tl);
+    printf("Grid Size (px):      %zux%zu\n", r.grid_width_px, r.grid_height_px);
+    printf("Memory Size (bytes): %zu\n", r.memory_size);
 
     if (*live) {
-        live_rendering_with_xlib();
+        live_rendering_with_xlib(&r);
     } else {
-        offline_rendering_into_png_files(*no_png, *atlas_png_path, *grid_png_path);
+        offline_rendering_into_png_files(&r, *no_png, *atlas_png_path, *grid_png_path);
     }
 
-    renderer_free(r);
+    renderer_free(&r);
 
     return 0;
 }
