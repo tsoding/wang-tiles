@@ -258,20 +258,27 @@ void generate_tile32(uint32_t *pixels, size_t width, size_t height, size_t strid
     }
 }
 
+typedef struct {
+    size_t tile_width_px;
+    size_t tile_height_px;
+    size_t atlas_width_px;
+    RGBA32 *atlas;
+    float time_uniform;
+    BLTR bltr;
+} Generate_Tile_Thread_Params;
+
 void *generate_tile_thread(void *arg)
 {
-    Renderer *r = &renderer;
+    Generate_Tile_Thread_Params params = *(Generate_Tile_Thread_Params*) arg;
 
-    size_t bltr = (size_t) arg;
-    size_t y = (bltr / ATLAS_WIDTH_TL) * r->tile_width_px;
-    size_t x = (bltr % ATLAS_WIDTH_TL) * r->tile_width_px;
-
+    size_t y = (params.bltr / ATLAS_WIDTH_TL) * params.tile_width_px;
+    size_t x = (params.bltr % ATLAS_WIDTH_TL) * params.tile_width_px;
 
     // TODO: the tile shader as the runtime parameter @cli
     generate_tile32(
-        &r->atlas[y * r->atlas_width_px + x],
-        r->tile_width_px, r->tile_height_px, r->atlas_width_px,
-        r->time_uniform, bltr, wang_digits);
+        &params.atlas[y * params.atlas_width_px + x],
+        params.tile_width_px, params.tile_height_px, params.atlas_width_px,
+        params.time_uniform, params.bltr, wang_digits);
 
     return NULL;
 }
@@ -280,12 +287,20 @@ void *generate_tile_thread(void *arg)
 // ./wang -j5
 void render_atlas(void)
 {
+    Renderer *r = &renderer;
     // TODO: it would be nice to figure out how to not recreate the threads on each render_atlas()
     pthread_t threads[16] = {0};
+    Generate_Tile_Thread_Params params[16] = {0};
 
     for (size_t i = 0; i < 16; ++i) {
         // TODO: can we get rid of pthread dependency on Linux completely and just use clone(2) directly
-        pthread_create(&threads[i], NULL, generate_tile_thread, (void*) i);
+        params[i].tile_width_px = r->tile_width_px;
+        params[i].tile_height_px = r->tile_height_px;
+        params[i].atlas_width_px = r->atlas_width_px;
+        params[i].atlas = r->atlas;
+        params[i].time_uniform = r->time_uniform;
+        params[i].bltr = i;
+        pthread_create(&threads[i], NULL, generate_tile_thread, (void*) &params[i]);
     }
 
     for (size_t i = 0; i < 16; ++i) {
