@@ -3,7 +3,7 @@
 
 // TODO: port to Windows
 // Should use WinAPI instead of pthread and X11
-// Maybe we should first factor out the platform layer
+// TODO: Maybe we should first factor out the platform layer
 // so it's easier to add more platforms.
 
 // TODO: port to MacOS
