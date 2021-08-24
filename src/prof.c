@@ -154,4 +154,5 @@ void dump_summary(FILE *stream)
 #define begin_clock(...)
 #define end_clock(...)
 #define dump_summary(...)
+#define clear_summary(...)
 #endif
