@@ -169,6 +169,7 @@ typedef struct {
     pthread_barrier_t init_barrier;
     pthread_barrier_t start_barrier;
     pthread_barrier_t atlas_render_barrier;
+    pthread_barrier_t grid_render_barrier;
 
     float time_uniform;         // current time in seconds, used for animation in shaders
 } Renderer;
@@ -263,28 +264,40 @@ void generate_tile32(uint32_t *pixels, size_t width, size_t height, size_t strid
     }
 }
 
+void copy_pixels32(RGBA32 *dst, size_t dst_stride,
+                   RGBA32 *src, size_t src_stride,
+                   size_t width, size_t height)
+{
+    while (height-- > 0) {
+        memcpy(dst, src, width * sizeof(RGBA32));
+        dst += dst_stride;
+        src += src_stride;
+    }
+}
+
 typedef struct {
     Renderer *r;
     BLTR bltr_start;
-} Render_Atlas_Thread_Params;
+} Render_Thread_Params;
 
-void *render_atlas_thread(void *arg)
+void *render_thread(void *arg)
 {
     Renderer *r = NULL;
     BLTR bltr_start = 0;
     {
         // TODO: make sure the params live long enough that we can extract info from them
-        Render_Atlas_Thread_Params params = *(Render_Atlas_Thread_Params*) arg;
+        Render_Thread_Params params = *(Render_Thread_Params*) arg;
         r = params.r;
         bltr_start = params.bltr_start;
     }
+
+    BLTR bltr_step = THREADS;
 
     pthread_barrier_wait(&r->init_barrier);
     // TODO: threads are not finilized properly at the end of the application
     while (1) {
         pthread_barrier_wait(&r->start_barrier);
 
-        BLTR bltr_step = THREADS;
         for (BLTR bltr = bltr_start; bltr < 16; bltr += bltr_step) {
             size_t y = (bltr / ATLAS_WIDTH_TL) * r->tile_width_px;
             size_t x = (bltr % ATLAS_WIDTH_TL) * r->tile_width_px;
@@ -297,6 +310,27 @@ void *render_atlas_thread(void *arg)
         }
 
         pthread_barrier_wait(&r->atlas_render_barrier);
+
+        size_t grid_tl_size = r->grid_width_tl * r->grid_height_tl;
+        for (size_t tile = bltr_start; tile < grid_tl_size; tile += bltr_step) {
+            size_t gy_tl = tile / r->grid_width_tl;
+            size_t gx_tl = tile % r->grid_width_tl;
+
+            BLTR bltr = r->grid_tl[gy_tl * r->grid_width_tl + gx_tl];
+            size_t ax_tl = bltr % ATLAS_WIDTH_TL;
+            size_t ay_tl = bltr / ATLAS_WIDTH_TL;
+
+            size_t gx_px = gx_tl * r->tile_width_px;
+            size_t gy_px = gy_tl * r->tile_height_px;
+            size_t ax_px = ax_tl * r->tile_width_px;
+            size_t ay_px = ay_tl * r->tile_height_px;
+
+            copy_pixels32(&r->grid_px[gy_px * r->grid_width_px + gx_px], r->grid_width_px,
+                          &r->atlas[ay_px * r->atlas_width_px + ax_px], r->atlas_width_px,
+                          r->tile_width_px, r->tile_height_px);
+        }
+
+        pthread_barrier_wait(&r->grid_render_barrier);
     }
 
     return NULL;
@@ -324,13 +358,19 @@ void renderer_start_threads(Renderer *r)
         exit(1);
     }
 
-    Render_Atlas_Thread_Params params[THREADS] = {0};
+    err = pthread_barrier_init(&r->grid_render_barrier, NULL, THREADS + 1);
+    if (err != 0) {
+        fprintf(stderr, "ERROR: Could not create Grid Render Barrier: %s\n", strerror(err));
+        exit(1);
+    }
+
+    Render_Thread_Params params[THREADS] = {0};
 
     for (size_t i = 0; i < THREADS; ++i) {
         // TODO: can we get rid of pthread dependency on Linux completely and just use clone(2) directly?
         params[i].r = r;
         params[i].bltr_start = i;
-        pthread_create(&r->threads[i], NULL, render_atlas_thread, (void*) &params[i]);
+        pthread_create(&r->threads[i], NULL, render_thread, (void*) &params[i]);
     }
 
     pthread_barrier_wait(&r->init_barrier);
@@ -340,11 +380,12 @@ void renderer_start_threads(Renderer *r)
 
 // TODO: a runtime parameter to limit the amount of created threads @cli
 // ./wang -j5
-void render_atlas(Renderer *r)
+void render_grid(Renderer *r)
 {
     assert(r->threads_created);
     pthread_barrier_wait(&r->start_barrier);
     pthread_barrier_wait(&r->atlas_render_barrier);
+    pthread_barrier_wait(&r->grid_render_barrier);
 }
 
 // rand_tile(-a-b)
@@ -373,17 +414,6 @@ BLTR rand_tile(BLTR v, BLTR p)
     }
 
     return cs[rand() % n];
-}
-
-void copy_pixels32(RGBA32 *dst, size_t dst_stride,
-                   RGBA32 *src, size_t src_stride,
-                   size_t width, size_t height)
-{
-    while (height-- > 0) {
-        memcpy(dst, src, width * sizeof(RGBA32));
-        dst += dst_stride;
-        src += src_stride;
-    }
 }
 
 void generate_grid(Renderer *r)
@@ -444,27 +474,6 @@ void generate_grid(Renderer *r)
             BLTR tp = 1 << 1;
             BLTR tv = (r->grid_tl[(y - 1) * r->grid_width_tl + x] & 8) >> 2;
             r->grid_tl[y * r->grid_width_tl + x] = rand_tile(lv | tv, lp | tp);
-        }
-    }
-}
-
-void render_grid(Renderer *r)
-{
-    // TODO: parallelize grid rendering
-    for (size_t gy_tl = 0; gy_tl < r->grid_height_tl; ++gy_tl) {
-        for (size_t gx_tl = 0; gx_tl < r->grid_width_tl; ++gx_tl) {
-            BLTR bltr = r->grid_tl[gy_tl * r->grid_width_tl + gx_tl];
-            size_t ax_tl = bltr % ATLAS_WIDTH_TL;
-            size_t ay_tl = bltr / ATLAS_WIDTH_TL;
-
-            size_t gx_px = gx_tl * r->tile_width_px;
-            size_t gy_px = gy_tl * r->tile_height_px;
-            size_t ax_px = ax_tl * r->tile_width_px;
-            size_t ay_px = ay_tl * r->tile_height_px;
-
-            copy_pixels32(&r->grid_px[gy_px * r->grid_width_px + gx_px], r->grid_width_px,
-                          &r->atlas[ay_px * r->atlas_width_px + ax_px], r->atlas_width_px,
-                          r->tile_width_px, r->tile_height_px);
         }
     }
 }
@@ -551,7 +560,6 @@ void live_rendering_with_xlib(Renderer *r)
         r->time_uniform = (float) now.tv_sec + (now.tv_nsec / 1000) * 0.000001;
 
         // TODO: live rendering animation that transitions between different grids @stream
-        render_atlas(r);
         render_grid(r);
         // TODO: XPutImage is slow, try to use XCopyArea instead @stream
         // https://www.x.org/releases/X11R7.5/doc/man/man3/XCopyArea.3.html
@@ -571,12 +579,6 @@ void offline_rendering_into_png_files(Renderer *r, bool no_png, const char *atla
     {
         begin_clock("RENDERING");
         {
-            begin_clock("ATLAS RENDERING");
-            {
-                render_atlas(r);
-            }
-            end_clock();
-
             // TODO: Could we do atlas rendering and grid generation in parallel?
             // Grid generation and atlas rendering are completely independant.
             begin_clock("GRID GENERATION");
