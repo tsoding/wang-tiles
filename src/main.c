@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #define _POSIX_C_SOURCE 199309L
 #include <assert.h>
 #include <stdio.h>
@@ -58,8 +59,8 @@ RGBA32 make_rgba32(float r, float g, float b)
 
 // TODO: colors as runtime parameters @cli
 static const RGB colors[] = {
-    // {1.0f, 0.0f, 0.0f}, // 0
-    // {0.0f, 1.0f, 1.0f}, // 1
+    {1.0f, 0.0f, 0.0f}, // 0
+    {0.0f, 1.0f, 1.0f}, // 1
 
     // {1.0f, 1.0f, 0.0f}, // 0
     // {0.0f, 0.0f, 1.0f}, // 1
@@ -70,8 +71,8 @@ static const RGB colors[] = {
     // {0.0f, 1.0f, 0.0f}, // 0
     // {1.0f, 0.0f, 1.0f}, // 1
 
-    {0.0f, 0.0f, 0.0f}, // 0
-    {1.0f, 1.0f, 1.0f}, // 1
+    // {0.0f, 0.0f, 0.0f}, // 0
+    // {1.0f, 1.0f, 1.0f}, // 1
 };
 static_assert(sizeof(colors) / sizeof(colors[0]) == 2, "colors array must have exactly 2 elements");
 
@@ -162,6 +163,12 @@ typedef struct {
     RGBA32 *grid_px;            // must be within the memory region defined by `memory` and `memory_size`
     size_t grid_width_px;       // must be equal to (grid_width_tl * tile_width_px)
     size_t grid_height_px;      // must be equal to (grid_height_tl * tile_height_px)
+
+    bool threads_created;
+    pthread_t threads[THREADS];
+    pthread_barrier_t init_barrier;
+    pthread_barrier_t start_barrier;
+    pthread_barrier_t atlas_render_barrier;
 
     float time_uniform;         // current time in seconds, used for animation in shaders
 } Renderer;
@@ -257,57 +264,86 @@ void generate_tile32(uint32_t *pixels, size_t width, size_t height, size_t strid
 }
 
 typedef struct {
-    size_t tile_width_px;
-    size_t tile_height_px;
-    size_t atlas_width_px;
-    size_t atlas_height_px;
-    RGBA32 *atlas;
-    float time_uniform;
+    Renderer *r;
     BLTR bltr_start;
-    BLTR bltr_step;
 } Render_Atlas_Thread_Params;
 
 void *render_atlas_thread(void *arg)
 {
-    Render_Atlas_Thread_Params params = *(Render_Atlas_Thread_Params*) arg;
+    Renderer *r = NULL;
+    BLTR bltr_start = 0;
+    {
+        // TODO: make sure the params live long enough that we can extract info from them
+        Render_Atlas_Thread_Params params = *(Render_Atlas_Thread_Params*) arg;
+        r = params.r;
+        bltr_start = params.bltr_start;
+    }
 
-    for (BLTR bltr = params.bltr_start; bltr < 16; bltr += params.bltr_step) {
-        size_t y = (bltr / ATLAS_WIDTH_TL) * params.tile_width_px;
-        size_t x = (bltr % ATLAS_WIDTH_TL) * params.tile_width_px;
+    pthread_barrier_wait(&r->init_barrier);
+    while (1) {
+        pthread_barrier_wait(&r->start_barrier);
 
-        // TODO: the tile shader as the runtime parameter @cli
-        generate_tile32(
-                &params.atlas[y * params.atlas_width_px + x],
-                params.tile_width_px, params.tile_height_px, params.atlas_width_px,
-                params.time_uniform, bltr, wang_digits);
+        BLTR bltr_step = THREADS;
+        for (BLTR bltr = bltr_start; bltr < 16; bltr += bltr_step) {
+            size_t y = (bltr / ATLAS_WIDTH_TL) * r->tile_width_px;
+            size_t x = (bltr % ATLAS_WIDTH_TL) * r->tile_width_px;
+
+            // TODO: the tile shader as the runtime parameter @cli
+            generate_tile32(
+                &r->atlas[y * r->atlas_width_px + x],
+                r->tile_width_px, r->tile_height_px, r->atlas_width_px,
+                r->time_uniform, bltr, wang_blobs);
+        }
+
+        pthread_barrier_wait(&r->atlas_render_barrier);
     }
 
     return NULL;
+}
+
+void renderer_start_threads(Renderer *r)
+{
+    int err;
+
+    err = pthread_barrier_init(&r->init_barrier, NULL, THREADS + 1);
+    if (err != 0) {
+        fprintf(stderr, "ERROR: Could not create Init Barrier: %s\n", strerror(err));
+        exit(1);
+    }
+
+    err = pthread_barrier_init(&r->start_barrier, NULL, THREADS + 1);
+    if (err != 0) {
+        fprintf(stderr, "ERROR: Could not create Start Barrier: %s\n", strerror(err));
+        exit(1);
+    }
+
+    err = pthread_barrier_init(&r->atlas_render_barrier, NULL, THREADS + 1);
+    if (err != 0) {
+        fprintf(stderr, "ERROR: Could not create Atlas Render Barrier: %s\n", strerror(err));
+        exit(1);
+    }
+
+    Render_Atlas_Thread_Params params[THREADS] = {0};
+
+    for (size_t i = 0; i < THREADS; ++i) {
+        // TODO: can we get rid of pthread dependency on Linux completely and just use clone(2) directly?
+        params[i].r = r;
+        params[i].bltr_start = i;
+        pthread_create(&r->threads[i], NULL, render_atlas_thread, (void*) &params[i]);
+    }
+
+    pthread_barrier_wait(&r->init_barrier);
+
+    r->threads_created = true;
 }
 
 // TODO: a runtime parameter to limit the amount of created threads @cli
 // ./wang -j5
 void render_atlas(Renderer *r)
 {
-    // TODO: it would be nice to figure out how to not recreate the threads on each render_atlas()
-    pthread_t threads[THREADS] = {0};
-    Render_Atlas_Thread_Params params[THREADS] = {0};
-
-    for (size_t i = 0; i < THREADS; ++i) {
-        // TODO: can we get rid of pthread dependency on Linux completely and just use clone(2) directly?
-        params[i].tile_width_px = r->tile_width_px;
-        params[i].tile_height_px = r->tile_height_px;
-        params[i].atlas_width_px = r->atlas_width_px;
-        params[i].atlas = r->atlas;
-        params[i].time_uniform = r->time_uniform;
-        params[i].bltr_start = i;
-        params[i].bltr_step = THREADS;
-        pthread_create(&threads[i], NULL, render_atlas_thread, (void*) &params[i]);
-    }
-
-    for (size_t i = 0; i < THREADS; ++i) {
-        pthread_join(threads[i], NULL);
-    }
+    assert(r->threads_created);
+    pthread_barrier_wait(&r->start_barrier);
+    pthread_barrier_wait(&r->atlas_render_barrier);
 }
 
 // rand_tile(-a-b)
@@ -489,8 +525,11 @@ void live_rendering_with_xlib(Renderer *r)
             // TODO: animation controls in live rendering
             case KeyPress: {
                 switch (XLookupKeysym(&event.xkey, 0)) {
-                case 'q': quit = 1; break;
-                default: {}
+                case 'q':
+                    quit = 1;
+                    break;
+                default:
+                {}
                 }
             } break;
             case ClientMessage: {
@@ -646,6 +685,7 @@ int main(int argc, char **argv)
     check_flag_range(program, gh, 1, MAX_GRID_HEIGHT_TL);
 
     renderer_realloc(&r, *not_potato, *tw, *th, *gw, *gh);
+    renderer_start_threads(&r);
 
     printf("Tile Size (px):      %zux%zu\n", r.tile_width_px, r.tile_height_px);
     printf("Grid Size (tl):      %zux%zu\n", r.grid_width_tl, r.grid_height_tl);
