@@ -59,8 +59,8 @@ RGBA32 make_rgba32(float r, float g, float b)
 
 // TODO: colors as runtime parameters @cli
 static const RGB colors[] = {
-    {1.0f, 0.0f, 0.0f}, // 0
-    {0.0f, 1.0f, 1.0f}, // 1
+    // {1.0f, 0.0f, 0.0f}, // 0
+    // {0.0f, 1.0f, 1.0f}, // 1
 
     // {1.0f, 1.0f, 0.0f}, // 0
     // {0.0f, 0.0f, 1.0f}, // 1
@@ -71,8 +71,8 @@ static const RGB colors[] = {
     // {0.0f, 1.0f, 0.0f}, // 0
     // {1.0f, 0.0f, 1.0f}, // 1
 
-    // {0.0f, 0.0f, 0.0f}, // 0
-    // {1.0f, 1.0f, 1.0f}, // 1
+    {0.0f, 0.0f, 0.0f}, // 0
+    {1.0f, 1.0f, 1.0f}, // 1
 };
 static_assert(sizeof(colors) / sizeof(colors[0]) == 2, "colors array must have exactly 2 elements");
 
@@ -292,7 +292,7 @@ void *render_atlas_thread(void *arg)
             generate_tile32(
                 &r->atlas[y * r->atlas_width_px + x],
                 r->tile_width_px, r->tile_height_px, r->atlas_width_px,
-                r->time_uniform, bltr, wang_blobs);
+                r->time_uniform, bltr, wang_digits);
         }
 
         pthread_barrier_wait(&r->atlas_render_barrier);
