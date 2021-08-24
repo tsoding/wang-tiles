@@ -282,15 +282,9 @@ typedef struct {
 
 void *render_thread(void *arg)
 {
-    Renderer *r = NULL;
-    BLTR bltr_start = 0;
-    {
-        // TODO: make sure the params live long enough that we can extract info from them
-        Render_Thread_Params params = *(Render_Thread_Params*) arg;
-        r = params.r;
-        bltr_start = params.bltr_start;
-    }
-
+    Render_Thread_Params params = *(Render_Thread_Params*) arg;
+    Renderer *r = params.r;
+    BLTR bltr_start = params.bltr_start;
     BLTR bltr_step = THREADS;
 
     pthread_barrier_wait(&r->init_barrier);
@@ -340,6 +334,7 @@ void renderer_start_threads(Renderer *r)
 {
     int err;
 
+    // TODO: introduce enum for barriers
     err = pthread_barrier_init(&r->init_barrier, NULL, THREADS + 1);
     if (err != 0) {
         fprintf(stderr, "ERROR: Could not create Init Barrier: %s\n", strerror(err));
@@ -367,7 +362,6 @@ void renderer_start_threads(Renderer *r)
     Render_Thread_Params params[THREADS] = {0};
 
     for (size_t i = 0; i < THREADS; ++i) {
-        // TODO: can we get rid of pthread dependency on Linux completely and just use clone(2) directly?
         params[i].r = r;
         params[i].bltr_start = i;
         pthread_create(&r->threads[i], NULL, render_thread, (void*) &params[i]);
@@ -561,8 +555,8 @@ void live_rendering_with_xlib(Renderer *r)
 
         // TODO: live rendering animation that transitions between different grids @stream
         render_grid(r);
-        // TODO: XPutImage is slow, try to use XCopyArea instead @stream
-        // https://www.x.org/releases/X11R7.5/doc/man/man3/XCopyArea.3.html
+        // TODO: use MIT-SHM Image
+        // TODO: use Xdbe extension for smoother animation
         XPutImage(display, window, gc, image,
                   0, 0,
                   0, 0,
@@ -579,8 +573,6 @@ void offline_rendering_into_png_files(Renderer *r, bool no_png, const char *atla
     {
         begin_clock("RENDERING");
         {
-            // TODO: Could we do atlas rendering and grid generation in parallel?
-            // Grid generation and atlas rendering are completely independant.
             begin_clock("GRID GENERATION");
             {
                 generate_grid(r);
