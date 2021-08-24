@@ -280,6 +280,7 @@ void *render_atlas_thread(void *arg)
     }
 
     pthread_barrier_wait(&r->init_barrier);
+    // TODO: threads are not finilized properly at the end of the application
     while (1) {
         pthread_barrier_wait(&r->start_barrier);
 
