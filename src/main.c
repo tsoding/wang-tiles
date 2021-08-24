@@ -532,6 +532,9 @@ void live_rendering_with_xlib(Renderer *r)
                 case 'q':
                     quit = 1;
                     break;
+                case 'p':
+                    dump_summary(stdout);
+                    break;
                 default:
                 {}
                 }
@@ -554,14 +557,23 @@ void live_rendering_with_xlib(Renderer *r)
         r->time_uniform = (float) now.tv_sec + (now.tv_nsec / 1000) * 0.000001;
 
         // TODO: live rendering animation that transitions between different grids @stream
-        render_grid(r);
-        // TODO: use MIT-SHM Image
-        // TODO: use Xdbe extension for smoother animation
-        XPutImage(display, window, gc, image,
-                  0, 0,
-                  0, 0,
-                  r->grid_width_px,
-                  r->grid_height_px);
+        clear_summary();
+        begin_clock("TOTAL");
+        {
+            begin_clock("RENDER GRID");
+            render_grid(r);
+            end_clock();
+            // TODO: use MIT-SHM Image
+            // TODO: use Xdbe extension for smoother animation
+            begin_clock("XPutImage");
+            XPutImage(display, window, gc, image,
+                      0, 0,
+                      0, 0,
+                      r->grid_width_px,
+                      r->grid_height_px);
+            end_clock();
+        }
+        end_clock();
     }
 
     XCloseDisplay(display);
