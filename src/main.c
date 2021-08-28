@@ -13,6 +13,7 @@
 #include <X11/Xlib.h>
 #define XK_LATIN1
 #include <X11/keysymdef.h>
+#include <X11/extensions/Xdbe.h>
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
@@ -300,7 +301,7 @@ void *render_thread(void *arg)
             generate_tile32(
                 &r->atlas[y * r->atlas_width_px + x],
                 r->tile_width_px, r->tile_height_px, r->atlas_width_px,
-                r->time_uniform, bltr, wang_digits);
+                r->time_uniform, bltr, wang_blobs);
         }
 
         pthread_barrier_wait(&r->atlas_render_barrier);
@@ -482,6 +483,14 @@ void live_rendering_with_xlib(Renderer *r)
         exit(1);
     }
 
+    int major_version_return, minor_version_return;
+    if(XdbeQueryExtension(display, &major_version_return, &minor_version_return)) {
+        printf("XDBE version %d.%d\n", major_version_return, minor_version_return);
+    } else {
+        fprintf(stderr, "XDBE is not supported!!!1\n");
+        exit(1);
+    }
+
     // TODO: More control over the Visual that is used by live_rendering_with_xlib() @cleanup
     // Right now we use whatever Visual that is picked by XCreateSimpleWindow
     // Since our render only works with 32bit RGBA pixels we need to be more explicit about
@@ -495,6 +504,9 @@ void live_rendering_with_xlib(Renderer *r)
                         0,
                         0,
                         0);
+
+    XdbeBackBuffer back_buffer = XdbeAllocateBackBufferName(display, window, 0);
+    printf("back_buffer ID: %lu\n", back_buffer);
 
     XWindowAttributes wa = {0};
     XGetWindowAttributes(display, window, &wa);
@@ -566,11 +578,15 @@ void live_rendering_with_xlib(Renderer *r)
             // TODO: use MIT-SHM Image
             // TODO: use Xdbe extension for smoother animation
             begin_clock("XPutImage");
-            XPutImage(display, window, gc, image,
+            XPutImage(display, back_buffer, gc, image,
                       0, 0,
                       0, 0,
                       r->grid_width_px,
                       r->grid_height_px);
+            XdbeSwapInfo swap_info;
+            swap_info.swap_window = window;
+            swap_info.swap_action = 0;
+            XdbeSwapBuffers(display, &swap_info, 1);
             end_clock();
         }
         end_clock();
